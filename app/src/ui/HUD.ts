@@ -279,31 +279,82 @@ export class HUD {
       for (let c = 0; c < COLS; c++) {
         const cell = SHINJUKU_GRID[r][c];
         if (cell === 1) continue;
-        ctx.fillStyle =
-          r === 0
-            ? exitReady
-              ? '#247848'
-              : '#3b1e20'
-            : cell === 2
-              ? '#5a4678'
-              : cell === 4
-                ? '#203c2a'
-                : '#232e38';
+        const isEastExit = c >= 19 && r >= 1 && r <= 3;
+        const isFreePassage = r >= 1 && r <= 4 && c <= 18;
+        const isPaidConcourse = c >= 3 && c <= 17 && r >= 6 && r <= 12;
+
+        if (isEastExit) {
+          ctx.fillStyle = exitReady ? '#227a48' : '#4a1c22';
+        } else if (cell === 2) {
+          // J・ADビジョン Light-Box Digital Signage Column
+          ctx.fillStyle = '#6c4ab8';
+        } else if (cell === 3) {
+          // みどりの窓口 Ticket Office
+          ctx.fillStyle = '#1b5a34';
+        } else if (cell === 4) {
+          // Platform 7-16 Staircase Bay
+          ctx.fillStyle = '#18241e';
+        } else if (isFreePassage) {
+          // 東西自由通路 (blue-tinted free passage matching JR East diagram)
+          ctx.fillStyle = '#25394a';
+        } else if (isPaidConcourse) {
+          // 改札内コンコース・中央通路 (green-tinted paid zone matching JR East diagram)
+          ctx.fillStyle = '#1e3028';
+        } else {
+          ctx.fillStyle = '#222b34';
+        }
         ctx.fillRect(pad + c * cw, pad + r * ch, cw - 0.5, ch - 0.5);
       }
     }
 
-    // Zone micro labels
-    ctx.fillStyle = '#8ef0b8';
-    ctx.font = 'bold 9px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('東改札', pad + 7.5 * cw, pad + 0.85 * ch);
-    ctx.fillStyle = '#a0abb4';
-    ctx.font = '8px sans-serif';
-    ctx.fillText('アルプス広場', pad + 7.5 * cw, pad + 5.7 * ch);
-    ctx.fillText('メトロプロムナード', pad + 7.5 * cw, pad + 11.7 * ch);
+    // Highlight 『新宿ウォール456』 along North wall of 東西自由通路 (c=5..16, r=1)
+    ctx.fillStyle = '#2ee0f8';
+    ctx.fillRect(pad + 5 * cw, pad + 1 * ch - 2.5, 11.4 * cw, 3);
 
-    // Charge terminals
+    // Color-coded platform stair badges (15・16, 13・14, 11・12, 9・10, 7・8番線)
+    const platBadges: Array<[number, string, string]> = [
+      [4, '15·16', '#7ac142'],
+      [7, '13·14', '#e8be00'],
+      [10, '11·12', '#f15a22'],
+      [13, '9·10', '#2888d8'],
+      [16, '7·8', '#f15a22'],
+    ];
+    ctx.textAlign = 'center';
+    for (const [col, label, color] of platBadges) {
+      const bx = pad + (col + 0.5) * cw;
+      ctx.fillStyle = color;
+      ctx.fillRect(pad + col * cw, pad + 7 * ch, cw - 0.5, 3);
+      ctx.fillRect(pad + col * cw, pad + 9 * ch, cw - 0.5, 3);
+      ctx.fillStyle = '#f2f6f4';
+      ctx.font = 'bold 7.5px monospace';
+      ctx.fillText(label, bx, pad + 8.65 * ch);
+    }
+
+    // Authentic Shinjuku B1F Zone & Gate Labels
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#8ceeff';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillText('新宿ウォール456', pad + 10.7 * cw, pad + 0.8 * ch);
+
+    ctx.fillStyle = '#e4eef6';
+    ctx.font = 'bold 8.5px sans-serif';
+    ctx.fillText('←西口   東西自由通路   アルプス広場→', pad + 10.5 * cw, pad + 2.6 * ch);
+
+    ctx.fillStyle = exitReady ? '#74ffb0' : '#ff8a8a';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillText('東口出口', pad + 19.5 * cw, pad + 2.4 * ch);
+
+    ctx.fillStyle = '#92f4b8';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillText('西改札', pad + 4.5 * cw, pad + 5.7 * ch);
+    ctx.fillText('みどりの窓口', pad + 10.5 * cw, pad + 5.7 * ch);
+    ctx.fillText('東改札', pad + 16.5 * cw, pad + 5.7 * ch);
+
+    ctx.fillStyle = '#c8d6dc';
+    ctx.font = 'bold 8.5px sans-serif';
+    ctx.fillText('←中央西改札(小田急・京王)   中央通路   中央東改札→', pad + 10.5 * cw, pad + 12.1 * ch);
+
+    // 5 Suica Charge Terminals
     for (const t of terminals) {
       const mx = pad + (t.def.x / CELL) * cw;
       const my = pad + (t.def.z / CELL) * ch;
@@ -311,6 +362,9 @@ export class HUD {
       ctx.beginPath();
       ctx.arc(mx, my, 4.2, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = '#091015';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
     }
 
     // Player marker + heading cone
@@ -319,16 +373,16 @@ export class HUD {
     ctx.save();
     ctx.translate(ux, uy);
     ctx.rotate(-yaw);
-    ctx.fillStyle = 'rgba(218, 174, 48, 0.28)';
+    ctx.fillStyle = 'rgba(218, 174, 48, 0.30)';
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(-9, -18);
     ctx.lineTo(9, -18);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#e6b836';
+    ctx.fillStyle = '#f0c038';
     ctx.beginPath();
-    ctx.arc(0, 0, 3.6, 0, Math.PI * 2);
+    ctx.arc(0, 0, 3.8, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }

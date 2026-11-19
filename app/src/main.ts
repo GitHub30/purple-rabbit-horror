@@ -7,7 +7,7 @@ import {
   PAYPHONE_POS,
   PEDESTAL_POS,
   PHOTOBOOTH_POS,
-  VICTORY_Z,
+  VICTORY_X,
 } from './station/shinjukuMap';
 import { createShinjukuEnvMap } from './station/shinjukuTextures';
 import {
@@ -92,22 +92,22 @@ class ShinjukuHorrorGame {
     this.renderer.toneMapping = THREE.NoToneMapping; // Handled in HDR PostFX ACES pass!
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x05090d);
-    this.scene.fog = new THREE.FogExp2(0x060b10, 0.044);
+    this.scene.background = new THREE.Color(0x0b1016);
+    this.scene.fog = new THREE.FogExp2(0x0b1016, 0.024);
     this.scene.environment = createShinjukuEnvMap(this.renderer);
 
     const aspect = window.innerWidth / Math.max(1, window.innerHeight);
-    this.camera = new THREE.PerspectiveCamera(this.computeFov(aspect), aspect, 0.08, 75);
+    this.camera = new THREE.PerspectiveCamera(this.computeFov(aspect), aspect, 0.08, 86);
     this.postFX = new PostFX(this.renderer, window.innerWidth, window.innerHeight, dpr);
 
-    // Subtle cool-teal subterranean bounce fill so Shinjuku stone & signage stay legible!
-    this.ambientHemi = new THREE.HemisphereLight(0x3a5260, 0x10161c, 0.52);
+    // Photorealistic subterranean bounce fill matching Shinjuku's white linear ceiling & granite floor
+    this.ambientHemi = new THREE.HemisphereLight(0xdce6ec, 0x38424c, 0.78);
     this.scene.add(this.ambientHemi);
 
-    // Dramatic title showcase raking spotlight on the 2.2m purple rabbit under East Gate!
-    this.titleLight = new THREE.SpotLight(0xdaf4ee, 34, 22, Math.PI * 0.28, 0.62, 1.25);
-    this.titleLight.position.set(31.8, 3.25, 21.4);
-    this.titleLight.target.position.set(PEDESTAL_POS.x, 1.25, PEDESTAL_POS.z - 4.4);
+    // Dramatic title showcase raking spotlight on the 2.2m purple rabbit in 東西自由通路!
+    this.titleLight = new THREE.SpotLight(0xedf8f5, 32, 24, Math.PI * 0.32, 0.62, 1.25);
+    this.titleLight.position.set(43.2, 3.4, 8.2);
+    this.titleLight.target.position.set(46.8, 1.25, 10.1);
     this.scene.add(this.titleLight, this.titleLight.target);
 
     this.collision = new CollisionSystem();
@@ -144,7 +144,7 @@ class ShinjukuHorrorGame {
       },
       onBrightnessChange: (v) => {
         this.brightnessMult = v;
-        this.ambientHemi.intensity = 0.52 * v;
+        this.ambientHemi.intensity = 0.78 * v;
       },
       onTouchModeChange: (m) => this.player.setTouchUIMode(m),
       onQualityChange: (q) => this.postFX.setQuality(q),
@@ -466,13 +466,12 @@ class ShinjukuHorrorGame {
       0
     );
     const sway = Math.sin(this.totalElapsed * 0.38) * 0.38;
-    const targetZ = PEDESTAL_POS.z - 4.4;
     if (this.camera.aspect < 0.92) {
-      this.camera.position.set(PEDESTAL_POS.x + sway * 0.28, 1.4 + Math.sin(this.totalElapsed * 0.7) * 0.03, targetZ + 4.9);
-      this.camera.lookAt(PEDESTAL_POS.x, 0.42, targetZ);
+      this.camera.position.set(40.2, 1.54 + Math.sin(this.totalElapsed * 0.7) * 0.03, 9.1 + sway * 0.25);
+      this.camera.lookAt(50.0, 1.12, 10.6);
     } else {
-      this.camera.position.set(PEDESTAL_POS.x - 1.35 + sway, 1.52 + Math.sin(this.totalElapsed * 0.7) * 0.04, targetZ + 3.85);
-      this.camera.lookAt(PEDESTAL_POS.x - 0.85, 1.15, targetZ);
+      this.camera.position.set(41.2, 1.56 + Math.sin(this.totalElapsed * 0.7) * 0.04, 8.7 + sway * 0.42);
+      this.camera.lookAt(52.0, 1.26, 10.8);
     }
     this.titleLight.intensity = 28 * (Math.sin(this.totalElapsed * 29) > 0.91 ? 0.35 : 1);
     this.player.hideFlashlight();
@@ -516,7 +515,7 @@ class ShinjukuHorrorGame {
     if (res.justPeeked) {
       this.glitchPulse = Math.max(this.glitchPulse, 0.32);
       this.sound.playStareChill();
-      this.hud.showSubtitle('……アルプス広場の柱の陰から、紫の大きな耳が覗いている……', 3.6);
+      this.hud.showSubtitle('……J・ADビジョンの白い柱の陰から、紫の大きな耳が覗いている……', 3.6);
     }
     if (res.justStareFroze) {
       this.glitchPulse = 0.78;
@@ -608,14 +607,14 @@ class ShinjukuHorrorGame {
     ) {
       this.pedestalCommentShown = true;
       this.hud.showSubtitle(
-        'アルプス広場の展示ケースが内側から割られている……紫色の足跡が東改札へ続いている。',
+        '東口アルプス広場の展示ケースが内側から割られている……紫色の足跡が東改札へ続いている。',
         5.0
       );
     }
 
     this.updateInteractions(dt);
 
-    if (this.exitGateUnlocked && this.player.position.z < VICTORY_Z) {
+    if (this.exitGateUnlocked && this.player.position.x > VICTORY_X) {
       this.triggerVictory();
       return;
     }
@@ -698,7 +697,7 @@ class ShinjukuHorrorGame {
         this.station.setPayphoneRinging(true);
         this.sound.playPayphoneRing(-0.45);
         this.hud.showSubtitle(
-          '西口通路の公衆電話が鳴っている……受話器の向こうから笑い声が漏れている……',
+          '西改札前の公衆電話が鳴っている……受話器の向こうから笑い声が漏れている……',
           4.6
         );
       }
@@ -708,9 +707,9 @@ class ShinjukuHorrorGame {
       if (this.payphoneRingTimer <= 0) this.station.setPayphoneRinging(false);
     }
 
-    // 3. Phantom Yamanote Line train roaring past below 14・15番線 stairwell!
+    // 3. Phantom Yamanote Line train roaring past above 13・14 / 15・16番線 stairwell!
     this.phantomTrainCooldown -= dt;
-    const nearYamanote = Math.hypot(this.player.position.x - 26, this.player.position.z - 42) < 11.5;
+    const nearYamanote = Math.hypot(this.player.position.x - 24, this.player.position.z - 32) < 13.5;
     if (
       this.phantomTrainCooldown <= 0 &&
       !isChasing &&
@@ -722,7 +721,7 @@ class ShinjukuHorrorGame {
       this.player.addCameraShake(0.32);
       this.glitchPulse = Math.max(this.glitchPulse, 0.34);
       this.hud.showSubtitle(
-        '14・15番線のホームを電車が轟音で通過した……！ 00:47、終電はもう終わったはずなのに……',
+        '14・15番線のホームを山手線が轟音で通過した……！ 00:47、終電はもう終わったはずなのに……',
         5.0
       );
     }

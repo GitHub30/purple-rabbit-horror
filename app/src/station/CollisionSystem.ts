@@ -1,4 +1,13 @@
-import { CELL, COLS, GATE_LINE_Z, PEDESTAL_POS, ROWS, SHINJUKU_GRID, worldToCell } from './shinjukuMap';
+import {
+  CELL,
+  COLS,
+  GATE_LINE_X,
+  GATE_LINE_Z,
+  PEDESTAL_POS,
+  ROWS,
+  SHINJUKU_GRID,
+  worldToCell,
+} from './shinjukuMap';
 
 export interface AABB {
   minX: number;
@@ -31,38 +40,39 @@ export class CollisionSystem {
             opaque: true,
           });
         } else if (cell === 2) {
-          // Shinjuku Digital Signage Pillar (1.42m x 1.42m)
-          const pad = (CELL - 1.42) * 0.5;
+          // J・ADビジョン新宿駅 Rectangular Light-Box Digital Signage Column (1.92m x 1.54m)
+          const padX = (CELL - 1.92) * 0.5;
+          const padZ = (CELL - 1.54) * 0.5;
           this.colliders.push({
-            minX: x0 + pad,
-            maxX: x0 + CELL - pad,
-            minZ: z0 + pad,
-            maxZ: z0 + CELL - pad,
+            minX: x0 + padX,
+            maxX: x0 + CELL - padX,
+            minZ: z0 + padZ,
+            maxZ: z0 + CELL - padZ,
             opaque: true,
           });
         } else if (cell === 3) {
-          // Transparent glass station office partition (blocks movement, allows LOS!)
+          // みどりの窓口 Ticket Office glass storefront (runs East-West along North face of R5, allows LOS!)
           this.colliders.push({
-            minX: x0 + CELL * 0.5 - 0.24,
-            maxX: x0 + CELL * 0.5 + 0.24,
-            minZ: z0,
-            maxZ: z0 + CELL,
+            minX: x0,
+            maxX: x0 + CELL,
+            minZ: z0 + 0.15,
+            maxZ: z0 + 0.65,
             opaque: false,
           });
         } else if (cell === 4) {
-          // Yamanote / Chuo Platform Stairwell Iron Grille (blocks movement, allows seeing through!)
+          // JR Shinjuku Platform 7-16 Ascending Staircase Block
           this.colliders.push({
-            minX: x0 + 0.15,
-            maxX: x0 + CELL - 0.15,
-            minZ: z0 + 0.15,
-            maxZ: z0 + CELL - 0.15,
+            minX: x0 + 0.18,
+            maxX: x0 + CELL - 0.18,
+            minZ: z0 + 0.14,
+            maxZ: z0 + CELL - 0.14,
             opaque: false,
           });
         }
       }
     }
 
-    // Alps Square central empty mascot pedestal
+    // Alps Square empty mascot display pedestal
     this.colliders.push({
       minX: PEDESTAL_POS.x - 1.05,
       maxX: PEDESTAL_POS.x + 1.05,
@@ -71,47 +81,47 @@ export class CollisionSystem {
       opaque: false,
     });
 
-    // East Ticket Gate side banks (left & right of center emergency gate @ x = 30.0)
+    // East Exit (歌舞伎町・アルタ方面 地上出口) side gate banks along x = GATE_LINE_X
     this.colliders.push({
-      minX: 23.6,
-      maxX: 28.7,
-      minZ: GATE_LINE_Z - 0.72,
-      maxZ: GATE_LINE_Z + 0.72,
+      minX: GATE_LINE_X - 0.68,
+      maxX: GATE_LINE_X + 0.68,
+      minZ: 1.0 * CELL,
+      maxZ: GATE_LINE_Z - 1.35,
       opaque: false,
     });
     this.colliders.push({
-      minX: 31.3,
-      maxX: 36.4,
-      minZ: GATE_LINE_Z - 0.72,
-      maxZ: GATE_LINE_Z + 0.72,
+      minX: GATE_LINE_X - 0.68,
+      maxX: GATE_LINE_X + 0.68,
+      minZ: GATE_LINE_Z + 1.35,
+      maxZ: 4.0 * CELL,
       opaque: false,
     });
 
-    // Center East Ticket Gate (unlocks when 5/5 charges complete)
+    // Center East Exit Emergency Gate & Shutter (unlocks when 5/5 Suica charges complete!)
     this.exitGateColliderIndex = this.colliders.length;
     this.colliders.push({
-      minX: 28.7,
-      maxX: 31.3,
-      minZ: GATE_LINE_Z - 0.6,
-      maxZ: GATE_LINE_Z + 0.6,
+      minX: GATE_LINE_X - 0.62,
+      maxX: GATE_LINE_X + 0.62,
+      minZ: GATE_LINE_Z - 1.35,
+      maxZ: GATE_LINE_Z + 1.35,
       opaque: false,
     });
 
-    // Station office desk
+    // Midori-no-Madoguchi interior counter desk
     this.colliders.push({
-      minX: 44.3,
-      maxX: 45.8,
-      minZ: 11.4,
-      maxZ: 14.3,
+      minX: 11.2 * CELL - 1.2,
+      maxX: 11.2 * CELL + 1.2,
+      minZ: 6.2 * CELL - 0.45,
+      maxZ: 6.2 * CELL + 0.45,
       opaque: false,
     });
 
-    // West waiting bench
+    // Inside-gate waiting bench (between 13・14 and 11・12 stairs)
     this.colliders.push({
-      minX: 11.0,
-      maxX: 14.2,
-      minZ: 36.4,
-      maxZ: 37.3,
+      minX: 8.6 * CELL - 1.4,
+      maxX: 8.6 * CELL + 1.4,
+      minZ: 8.5 * CELL - 0.35,
+      maxZ: 8.5 * CELL + 0.35,
       opaque: false,
     });
   }
@@ -123,8 +133,8 @@ export class CollisionSystem {
       col.minZ = -999;
       col.maxZ = -998;
     } else {
-      col.minZ = GATE_LINE_Z - 0.6;
-      col.maxZ = GATE_LINE_Z + 0.6;
+      col.minZ = GATE_LINE_Z - 1.35;
+      col.maxZ = GATE_LINE_Z + 1.35;
     }
   }
 
@@ -146,9 +156,9 @@ export class CollisionSystem {
             rz += (dz / d) * push;
           } else {
             const dL = Math.abs(rx - box.minX);
-            const dR = Math.abs(box.maxX - rx);
+            const dR = Math.abs(rx - box.maxX);
             const dT = Math.abs(rz - box.minZ);
-            const dB = Math.abs(box.maxZ - rz);
+            const dB = Math.abs(rz - box.maxZ);
             const m = Math.min(dL, dR, dT, dB);
             if (m === dL) rx = box.minX - radius;
             else if (m === dR) rx = box.maxX + radius;
@@ -190,7 +200,7 @@ export function findGridPath(
   const g = worldToCell(goal.x, goal.z);
 
   const isWalkable = (c: number, r: number): boolean => {
-    if (c < 0 || c >= COLS || r < 1 || r >= ROWS) return false;
+    if (c < 1 || c >= COLS - 1 || r < 1 || r >= ROWS - 1) return false;
     return SHINJUKU_GRID[r][c] === 0;
   };
 
@@ -205,72 +215,84 @@ export function findGridPath(
         }
       }
     }
-    return { col: 7, row: 4 };
+    return { col: 11, row: 2 };
   };
 
-  const sc = clampWalkable(s);
-  const gc = clampWalkable(g);
-  if (sc.col === gc.col && sc.row === gc.row) return [goal];
+  const sCell = clampWalkable(s);
+  const gCell = clampWalkable(g);
+  const key = (c: number, r: number) => `${c},${r}`;
 
-  const key = (c: number, r: number) => r * COLS + c;
-  const open: number[] = [key(sc.col, sc.row)];
-  const cameFrom = new Int16Array(COLS * ROWS).fill(-1);
-  const gScore = new Float32Array(COLS * ROWS).fill(1e9);
-  const fScore = new Float32Array(COLS * ROWS).fill(1e9);
-  const inOpen = new Uint8Array(COLS * ROWS);
+  interface Node {
+    c: number;
+    r: number;
+    g: number;
+    f: number;
+    parent: Node | null;
+  }
 
-  const startK = key(sc.col, sc.row);
-  const goalK = key(gc.col, gc.row);
-  gScore[startK] = 0;
-  fScore[startK] = Math.abs(sc.col - gc.col) + Math.abs(sc.row - gc.row);
-  inOpen[startK] = 1;
-
+  const open: Node[] = [
+    {
+      c: sCell.col,
+      r: sCell.row,
+      g: 0,
+      f: Math.hypot(gCell.col - sCell.col, gCell.row - sCell.row),
+      parent: null,
+    },
+  ];
+  const bestG = new Map<string, number>([[key(sCell.col, sCell.row), 0]]);
   const dirs = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
+    [1, 0, 1],
+    [-1, 0, 1],
+    [0, 1, 1],
+    [0, -1, 1],
+    [1, 1, 1.414],
+    [-1, 1, 1.414],
+    [1, -1, 1.414],
+    [-1, -1, 1.414],
   ];
 
-  while (open.length > 0) {
-    let bestIdx = 0;
-    for (let i = 1; i < open.length; i++) {
-      if (fScore[open[i]] < fScore[open[bestIdx]]) bestIdx = i;
+  let found: Node | null = null;
+  let steps = 0;
+  while (open.length > 0 && steps++ < 480) {
+    open.sort((a, b) => a.f - b.f);
+    const cur = open.shift()!;
+    if (cur.c === gCell.col && cur.r === gCell.row) {
+      found = cur;
+      break;
     }
-    const curr = open.splice(bestIdx, 1)[0];
-    inOpen[curr] = 0;
-    if (curr === goalK) {
-      const path: Array<{ x: number; z: number }> = [];
-      let k = curr;
-      while (k !== -1 && k !== startK) {
-        const r = Math.floor(k / COLS);
-        const c = k % COLS;
-        path.push({ x: (c + 0.5) * CELL, z: (r + 0.5) * CELL });
-        k = cameFrom[k];
-      }
-      path.reverse();
-      if (path.length > 0) path[path.length - 1] = { x: goal.x, z: goal.z };
-      return path;
-    }
-
-    const cr = Math.floor(curr / COLS);
-    const cc = curr % COLS;
-    for (const [dc, dr] of dirs) {
-      const nc = cc + dc;
-      const nr = cr + dr;
+    for (const [dc, dr, cost] of dirs) {
+      const nc = cur.c + dc;
+      const nr = cur.r + dr;
       if (!isWalkable(nc, nr)) continue;
-      const nk = key(nc, nr);
-      const tentG = gScore[curr] + 1;
-      if (tentG < gScore[nk]) {
-        cameFrom[nk] = curr;
-        gScore[nk] = tentG;
-        fScore[nk] = tentG + Math.abs(nc - gc.col) + Math.abs(nr - gc.row);
-        if (!inOpen[nk]) {
-          open.push(nk);
-          inOpen[nk] = 1;
-        }
+      if (dc !== 0 && dr !== 0 && (!isWalkable(cur.c + dc, cur.r) || !isWalkable(cur.c, cur.r + dr))) {
+        continue;
+      }
+      const ng = cur.g + cost;
+      const k = key(nc, nr);
+      if (ng < (bestG.get(k) ?? Infinity)) {
+        bestG.set(k, ng);
+        open.push({
+          c: nc,
+          r: nr,
+          g: ng,
+          f: ng + Math.hypot(gCell.col - nc, gCell.row - nr),
+          parent: cur,
+        });
       }
     }
   }
-  return [goal];
+
+  if (!found) return [{ x: goal.x, z: goal.z }];
+  const pts: Array<{ x: number; z: number }> = [];
+  let cur: Node | null = found;
+  while (cur && cur.parent) {
+    pts.unshift({ x: (cur.c + 0.5) * CELL, z: (cur.r + 0.5) * CELL });
+    cur = cur.parent;
+  }
+  if (pts.length > 0) {
+    pts[pts.length - 1] = { x: goal.x, z: goal.z };
+  } else {
+    pts.push({ x: goal.x, z: goal.z });
+  }
+  return pts;
 }
