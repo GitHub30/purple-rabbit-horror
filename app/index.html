@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>紫のうさぎ — 新宿駅 00:47 サバイバルホラー</title>
+  <meta
+    name="description"
+    content="終電後のJR新宿駅（アルプス広場・東改札・メトロプロムナード）で、展示台から消えた2mの紫のうさぎから逃げながら5箇所のSuicaチャージ機を巡り、東改札から脱出する一人称3Dサバイバルホラーゲーム。"
+  />
+  <link
+    rel="icon"
+    type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%230b0e11'/%3E%3Cellipse cx='20' cy='19' rx='7' ry='14' transform='rotate(-22 20 19)' fill='%237855b3'/%3E%3Cellipse cx='44' cy='19' rx='7' ry='14' transform='rotate(22 44 19)' fill='%237855b3'/%3E%3Ccircle cx='32' cy='41' r='16' fill='%237855b3'/%3E%3Cellipse cx='32' cy='41' rx='10' ry='8' fill='%23eceae4'/%3E%3Ccircle cx='28' cy='39' r='2' fill='%230b0e11'/%3E%3Ccircle cx='36' cy='39' r='2' fill='%230b0e11'/%3E%3Cpath d='M26 44 Q32 49 38 44 Z' fill='%230b0e11'/%3E%3C/svg%3E"
+  />
+</head>
+<body>
+  <canvas id="game-canvas" aria-label="紫のうさぎ 新宿駅 3Dゲーム画面"></canvas>
+
+  <!-- Atmospheric film vignette, scanlines, proximity dread crimson rim -->
+  <div id="horror-fx" aria-hidden="true">
+    <div class="fx-vignette"></div>
+    <div class="fx-scanlines"></div>
+    <div class="fx-blood"></div>
+  </div>
+
+  <!-- Locker / Phone Booth Hiding Overlay + Breath-Hold Stealth Meter -->
+  <div id="hide-slats-overlay" aria-hidden="true">
+    <div class="slat-top"></div>
+    <div class="slat-bottom"></div>
+    <div id="breath-meter-wrap" class="breath-meter-wrap" hidden>
+      <div class="breath-meter-track">
+        <div id="breath-meter-fill" class="breath-meter-fill"></div>
+      </div>
+      <span id="breath-meter-hint" class="breath-meter-hint">[Space] 長押しで息を止める</span>
+    </div>
+    <div id="hide-breath-label" class="hide-breath-label">息を潜めている…</div>
+  </div>
+
+  <!-- Loading Screen -->
+  <section id="screen-loading" class="overlay-screen screen-center">
+    <div class="loading-box">
+      <div class="loading-station">JR SHINJUKU STATION B1F // JY17 · JC05</div>
+      <div class="loading-title">紫のうさぎ</div>
+      <div class="loading-sub">新宿駅コンコースと3Dモデルを構築中…</div>
+      <div class="loading-bar"><span class="loading-bar-inner"></span></div>
+    </div>
+  </section>
+
+  <!-- Live 3D Shinjuku Station Title Screen -->
+  <header id="screen-title" class="overlay-screen screen-title" hidden>
+    <div class="title-scrim"></div>
+    <div class="title-content">
+      <div class="title-meta">
+        <span class="rec-dot"></span>
+        <span class="jr-badge">JR新宿駅 JY17</span>
+        <span>ALPS SQUARE B1F // 00:47</span>
+      </div>
+
+      <h1 class="game-title">紫のうさぎ</h1>
+      <p class="game-subtitle">終電後の新宿駅、東改札の向こうで笑っている。</p>
+
+      <div class="title-rule"></div>
+
+      <p class="title-premise">
+        終電を逃した地下迷宮<strong>「新宿駅」</strong>。アルプス広場の展示台から消えた2メートルの紫のうさぎから逃げながら、構内5か所の<strong>Suicaチャージ機</strong>で残高¥1,000を貯め、<strong>東改札・地上出口（歌舞伎町）</strong>から脱出せよ。
+      </p>
+
+      <div class="difficulty-group" role="radiogroup" aria-label="難易度選択">
+        <button type="button" class="diff-btn is-active" data-diff="normal">
+          <span class="diff-name">通常</span>
+          <span class="diff-desc">標準的な探索・逃走バランス</span>
+        </button>
+        <button type="button" class="diff-btn" data-diff="nightmare">
+          <span class="diff-name">悪夢</span>
+          <span class="diff-desc">聴覚鋭敏・追跡速度上昇</span>
+        </button>
+      </div>
+
+      <div class="title-actions">
+        <button type="button" id="btn-start" class="btn-primary">
+          <span>新宿駅構内へ入る</span>
+          <span class="btn-arrow">→</span>
+        </button>
+      </div>
+
+      <dl class="controls-strip">
+        <div><dt>WASD / ↑↓</dt><dd>移動</dd></div>
+        <div><dt>マウス / ←→</dt><dd>視点</dd></div>
+        <div><dt>Shift</dt><dd>ダッシュ</dd></div>
+        <div><dt>C / Ctrl</dt><dd>しゃがむ</dd></div>
+        <div><dt>F</dt><dd>懐中電灯</dd></div>
+        <div><dt>E</dt><dd>操作・隠れる</dd></div>
+        <div><dt>Space</dt><dd>息を止める(潜伏中)</dd></div>
+        <div><dt>G / 右クリック</dt><dd>硬貨で陽動</dd></div>
+        <div><dt>M / Tab</dt><dd>新宿駅構内図</dd></div>
+      </dl>
+
+      <p class="mobile-controls-note">
+        スマホ操作：開始時に自動でフルスクリーン・横画面化。左スティックで移動・画面ドラッグで視点・潜伏中は「息を止める」を長押し。
+      </p>
+
+      <footer class="title-credit">
+        3D Model: GitHub30/purple-rabbit · ヘッドホン推奨
+      </footer>
+    </div>
+  </header>
+
+  <!-- In-Game Diegetic HUD -->
+  <main id="hud-layer" class="hud-layer" hidden>
+    <aside class="ic-card" aria-label="ICカード残高">
+      <div class="ic-card-header">
+        <span class="ic-brand">SHINJUKU SUICA</span>
+        <span class="ic-chip"></span>
+      </div>
+      <div class="ic-balance-row">
+        <span class="ic-label">残高</span>
+        <strong id="ic-balance" class="ic-balance">¥0 / ¥1,000</strong>
+      </div>
+      <div class="ic-pips" aria-hidden="true">
+        <span class="ic-pip"></span>
+        <span class="ic-pip"></span>
+        <span class="ic-pip"></span>
+        <span class="ic-pip"></span>
+        <span class="ic-pip"></span>
+      </div>
+      <div id="ic-objective" class="ic-objective">新宿駅構内のチャージ機を探す（残り 5 箇所）</div>
+    </aside>
+
+    <div class="cctv-top-right">
+      <div class="cctv-stamp">
+        <span class="rec-dot"></span>
+        <span id="cctv-clock">SHINJUKU CAM-E04  00:47:00</span>
+      </div>
+      <div class="cctv-controls">
+        <button type="button" id="btn-mute" class="hud-mini-btn">音声 ON</button>
+        <button type="button" id="btn-pause-hud" class="hud-mini-btn">一時停止</button>
+      </div>
+    </div>
+
+    <div id="crosshair" class="crosshair" aria-hidden="true"></div>
+
+    <div id="charge-ring-wrap" class="charge-ring-wrap" hidden>
+      <svg class="charge-ring-svg" viewBox="0 0 68 68">
+        <circle class="charge-ring-bg" cx="34" cy="34" r="28" />
+        <circle id="charge-ring-fill" class="charge-ring-fill" cx="34" cy="34" r="28" />
+      </svg>
+      <span id="charge-pct" class="charge-pct">0%</span>
+    </div>
+
+    <div id="interact-prompt" class="interact-prompt" hidden>
+      <kbd id="prompt-key">E</kbd>
+      <span id="prompt-text">操作</span>
+    </div>
+
+    <div id="subtitle-bar" class="subtitle-bar" role="status" aria-live="polite"></div>
+
+    <div class="hud-bottom-left">
+      <div id="stamina-wrap" class="stamina-wrap">
+        <span class="stamina-label">STAMINA</span>
+        <div class="stamina-track">
+          <div id="stamina-fill" class="stamina-fill"></div>
+        </div>
+      </div>
+      <div class="status-row">
+        <span id="status-flashlight" class="status-tag is-on">[F] ライト ON</span>
+        <span id="status-crouch" class="status-tag">[C] 立つ</span>
+        <span id="status-coins" class="status-tag">[G] 硬貨 ×2</span>
+        <span id="status-map" class="status-tag">[M] 構内図</span>
+      </div>
+      <div id="look-hint" class="look-hint">
+        画面クリックで視点ロック（ドラッグ・←→キーでも視点操作可能）
+      </div>
+    </div>
+
+    <aside id="station-map-panel" class="station-map-panel" hidden aria-label="新宿駅 B1F 構内案内図">
+      <div class="station-map-header">
+        <span>JR新宿駅 B1F 構内図</span>
+        <span class="station-map-key">[M] で閉じる</span>
+      </div>
+      <canvas id="station-map-canvas" width="276" height="236"></canvas>
+      <div class="station-map-legend">
+        <span><i class="leg-dot leg-term"></i>未チャージ</span>
+        <span><i class="leg-dot leg-done"></i>完了</span>
+        <span><i class="leg-dot leg-you"></i>現在地</span>
+      </div>
+    </aside>
+
+    <!-- Smartphone Multi-Touch Virtual Joystick & Ergonomic Action Pad -->
+    <div id="touch-controls" class="touch-controls" hidden aria-label="タッチ操作パネル">
+      <div id="touch-joystick-zone" class="touch-joystick-zone">
+        <div id="touch-joystick-base" class="touch-joystick-base">
+          <span class="touch-sprint-tag">RUN</span>
+          <div id="touch-joystick-knob" class="touch-joystick-knob"></div>
+        </div>
+      </div>
+
+      <div class="touch-actions">
+        <div class="touch-utility-grid">
+          <button type="button" id="touch-btn-light" class="touch-pill is-active">ライト</button>
+          <button type="button" id="touch-btn-crouch" class="touch-pill">しゃがむ</button>
+          <button type="button" id="touch-btn-sprint" class="touch-pill">ダッシュ</button>
+          <button type="button" id="touch-btn-coin" class="touch-pill">硬貨 2</button>
+          <button type="button" id="touch-btn-map" class="touch-pill">構内図</button>
+        </div>
+        <div class="touch-action-row">
+          <button type="button" id="touch-btn-breath" class="touch-breath-btn" hidden>息を止める</button>
+          <button type="button" id="touch-btn-interact" class="touch-interact-btn">
+            <span id="touch-interact-label">操作</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Lore Note Reader Modal -->
+  <section id="screen-note" class="overlay-screen screen-center screen-dim" hidden>
+    <article class="paper-modal" role="dialog" aria-modal="true" aria-labelledby="note-title">
+      <header class="paper-header">
+        <h2 id="note-title">メモ</h2>
+        <span id="note-date" class="paper-date"></span>
+      </header>
+      <div id="note-body" class="paper-body"></div>
+      <div class="paper-footer">
+        <button type="button" id="btn-note-close" class="btn-secondary">閉じる</button>
+      </div>
+    </article>
+  </section>
+
+  <!-- Pause & Settings Menu -->
+  <section id="screen-pause" class="overlay-screen screen-center screen-dim" hidden>
+    <div class="panel-modal" role="dialog" aria-modal="true" aria-labelledby="pause-heading">
+      <div class="panel-kicker">PAUSED // JR SHINJUKU STATION B1F</div>
+      <h2 id="pause-heading" class="panel-title">一時停止</h2>
+
+      <div class="settings-list">
+        <label class="setting-row">
+          <span>視点感度</span>
+          <input id="slider-sens" type="range" min="0.4" max="2.2" step="0.1" value="1.0" />
+          <output id="val-sens">1.0x</output>
+        </label>
+        <label class="setting-row">
+          <span>画面の明るさ</span>
+          <input id="slider-bright" type="range" min="0.7" max="1.6" step="0.05" value="1.0" />
+          <output id="val-bright">100%</output>
+        </label>
+        <label class="setting-row setting-select-row">
+          <span>タッチ操作</span>
+          <select id="select-touch-ui" class="setting-select">
+            <option value="auto" selected>自動（スマホで表示）</option>
+            <option value="on">常に表示</option>
+            <option value="off">非表示（PC向け）</option>
+          </select>
+        </label>
+        <label class="setting-row setting-select-row">
+          <span>画質モード</span>
+          <select id="select-quality" class="setting-select">
+            <option value="ultra" selected>ウルトラ（HDRブルーム・SSAO・CAS）</option>
+            <option value="standard">標準（軽量パフォーマンス）</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="btn-resume" class="btn-primary">探索を再開する</button>
+        <button type="button" id="btn-pause-restart" class="btn-secondary">最初からやり直す</button>
+        <button type="button" id="btn-pause-title" class="btn-ghost">タイトルへ戻る</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Game Over Screen -->
+  <section id="screen-gameover" class="overlay-screen screen-center screen-gameover" hidden>
+    <div class="panel-modal panel-danger" role="dialog" aria-modal="true">
+      <div class="panel-kicker danger-kicker">SIGNAL LOST // SHINJUKU CAM-E04</div>
+      <h2 class="panel-title">改札通過失敗</h2>
+      <p class="panel-lead">新宿駅の暗闇で紫のうさぎに捕まった。残高はすべて回収された。</p>
+      <div id="gameover-stats" class="stats-grid"></div>
+      <div class="modal-actions">
+        <button type="button" id="btn-gameover-retry" class="btn-primary">もう一度挑む</button>
+        <button type="button" id="btn-gameover-title" class="btn-ghost">タイトルへ戻る</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Victory Escape Screen -->
+  <section id="screen-victory" class="overlay-screen screen-center screen-victory" hidden>
+    <div class="panel-modal panel-success" role="dialog" aria-modal="true">
+      <div class="panel-kicker success-kicker">EAST EXIT CLEARED // 新宿東口・歌舞伎町</div>
+      <h2 class="panel-title">新宿駅からの脱出成功</h2>
+      <p class="panel-lead">
+        深夜の歌舞伎町の冷たい夜気が頬を撫でる。振り返った東口シャッターの隙間から、紫色の大きな耳が静かに揺れているのが見えた。
+      </p>
+      <div id="victory-stats" class="stats-grid"></div>
+      <div class="modal-actions">
+        <button type="button" id="btn-victory-retry" class="btn-primary">もう一度プレイする</button>
+        <button type="button" id="btn-victory-title" class="btn-ghost">タイトルへ戻る</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
