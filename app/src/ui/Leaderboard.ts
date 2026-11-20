@@ -11,7 +11,7 @@ export interface RankingEntry {
   chasesSurvived: number;
   coinsTossed: number;
   clearedAt: string;
-  source: 'global' | 'live' | 'local';
+  source: 'global' | 'local';
 }
 
 export interface RankingRunInput {
@@ -25,16 +25,12 @@ export interface RankingRunInput {
 
 const LOCAL_STORAGE_KEY = 'purple_rabbit_shinjuku_rankings_v1';
 const PLAYER_NAME_KEY = 'purple_rabbit_shinjuku_player_name_v1';
-const REPO_SLUG = 'GitHub30/purple-rabbit-horror';
 
-function fnv1aHex(str: string): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h.toString(16).padStart(8, '0');
-}
+// JSONBin.io v3 Global Leaderboard Configuration
+export const JSONBIN_BIN_ID = '6b002310ac6210605a971ec7';
+export const JSONBIN_MASTER_KEY =
+  '$2a$10$aIIH0qWAL2Me4dWkIMtp1OTdWRxiWQoOJtRidy.VAGvKV3wxDKtky';
+const JSONBIN_BASE_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 export function sanitizePlayerName(raw: string): string {
   return String(raw || '')
@@ -68,20 +64,6 @@ export function formatShortDate(iso: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-export function computeSignature(entry: {
-  id: string;
-  name: string;
-  elapsedSec: number;
-  difficulty: 'normal' | 'nightmare';
-  notesRead: number;
-  chasesSurvived: number;
-  coinsTossed: number;
-}): string {
-  const sec10 = Math.round(entry.elapsedSec * 10);
-  const raw = `shinjuku-0047|${entry.id}|${entry.name}|${sec10}|${entry.difficulty}|${entry.notesRead}|${entry.chasesSurvived}|${entry.coinsTossed}`;
-  return fnv1aHex(raw);
-}
-
 export function sortRankings(entries: RankingEntry[]): RankingEntry[] {
   return [...entries].sort((a, b) => {
     if (a.elapsedSec !== b.elapsedSec) return a.elapsedSec - b.elapsedSec;
@@ -107,26 +89,38 @@ export function savePlayerName(name: string): void {
   } catch {}
 }
 
+function normalizeEntry(raw: unknown, source: 'global' | 'local'): RankingEntry | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const x = raw as Record<string, unknown>;
+  const id = String(x.id || '').trim();
+  const elapsedSec = Math.round(Number(x.elapsedSec) * 10) / 10;
+  if (!id || !Number.isFinite(elapsedSec) || elapsedSec < 1 || elapsedSec > 10800) return null;
+  return {
+    id,
+    name: sanitizePlayerName(String(x.name || '')) || '新宿からの脱出者',
+    elapsedSec,
+    difficulty: x.difficulty === 'nightmare' ? 'nightmare' : 'normal',
+    notesRead: Math.max(0, Math.min(8, Math.floor(Number(x.notesRead) || 0))),
+    totalNotes: Math.max(1, Math.floor(Number(x.totalNotes) || 8)),
+    chasesSurvived: Math.max(0, Math.floor(Number(x.chasesSurvived) || 0)),
+    coinsTossed: Math.max(0, Math.floor(Number(x.coinsTossed) || 0)),
+    clearedAt: typeof x.clearedAt === 'string' ? x.clearedAt : new Date().toISOString(),
+    source,
+  };
+}
+
 export function loadLocalRankings(): RankingEntry[] {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((x) => x && typeof x.id === 'string' && typeof x.elapsedSec === 'number')
-      .map((x) => ({
-        id: String(x.id),
-        name: sanitizePlayerName(x.name) || '新宿からの脱出者',
-        elapsedSec: Math.round(Math.max(1, Number(x.elapsedSec)) * 10) / 10,
-        difficulty: x.difficulty === 'nightmare' ? 'nightmare' : 'normal',
-        notesRead: Math.max(0, Math.min(8, Math.floor(Number(x.notesRead) || 0))),
-        totalNotes: Math.max(1, Math.floor(Number(x.totalNotes) || 8)),
-        chasesSurvived: Math.max(0, Math.floor(Number(x.chasesSurvived) || 0)),
-        coinsTossed: Math.max(0, Math.floor(Number(x.coinsTossed) || 0)),
-        clearedAt: typeof x.clearedAt === 'string' ? x.clearedAt : new Date().toISOString(),
-        source: 'local' as const,
-      }));
+    const out: RankingEntry[] = [];
+    for (const item of parsed) {
+      const e = normalizeEntry(item, 'local');
+      if (e) out.push(e);
+    }
+    return sortRankings(out);
   } catch {
     return [];
   }
@@ -163,106 +157,31 @@ export function createRunEntry(name: string, run: RankingRunInput, existingId?: 
   };
 }
 
-export function buildGitHubSubmitUrl(entry: RankingEntry): string {
-  const payload = {
-    id: entry.id,
-    name: entry.name,
-    elapsedSec: entry.elapsedSec,
-    difficulty: entry.difficulty,
-    notesRead: entry.notesRead,
-    chasesSurvived: entry.chasesSurvived,
-    coinsTossed: entry.coinsTossed,
-    sig: computeSignature(entry),
-  };
-  const diffLabel = entry.difficulty === 'nightmare' ? '悪夢' : '通常';
-  const rank = computeClearRank(entry.elapsedSec, entry.difficulty);
-  const title = `[脱出記録] ${entry.name} / ${formatClearTime(entry.elapsedSec)} (${diffLabel}・ランク${rank})`;
-  const body = [
-    'このまま下の「Submit new issue」ボタンを押すと、自動的にオンライン全体ランキングへ登録されます。',
-    '',
-    '```json',
-    JSON.stringify(payload, null, 2),
-    '```',
-  ].join('\n');
-  const params = new URLSearchParams({
-    labels: 'clear-ranking',
-    title,
-    body,
-  });
-  return `https://github.com/${REPO_SLUG}/issues/new?${params.toString()}`;
-}
-
-async function fetchStaticGlobalRankings(): Promise<{ ok: boolean; entries: RankingEntry[] }> {
-  try {
-    const res = await fetch(`./rankings.json?t=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) return { ok: false, entries: [] };
-    const data = await res.json();
-    const list = Array.isArray(data?.entries) ? data.entries : [];
-    const entries = list
-      .filter((x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object')
-      .map((x: Record<string, unknown>) => ({
-        id: String(x.id || ''),
-        name: sanitizePlayerName(String(x.name || '')) || '脱出者',
-        elapsedSec: Math.round(Math.max(1, Number(x.elapsedSec) || 0) * 10) / 10,
-        difficulty: x.difficulty === 'nightmare' ? ('nightmare' as const) : ('normal' as const),
-        notesRead: Math.max(0, Math.min(8, Math.floor(Number(x.notesRead) || 0))),
-        totalNotes: Math.max(1, Math.floor(Number(x.totalNotes) || 8)),
-        chasesSurvived: Math.max(0, Math.floor(Number(x.chasesSurvived) || 0)),
-        coinsTossed: Math.max(0, Math.floor(Number(x.coinsTossed) || 0)),
-        clearedAt: typeof x.clearedAt === 'string' ? x.clearedAt : new Date().toISOString(),
-        source: 'global' as const,
-      }))
-      .filter((x: RankingEntry) => x.id.length > 0 && x.elapsedSec >= 20);
-    return { ok: true, entries };
-  } catch {
-    return { ok: false, entries: [] };
-  }
-}
-
-async function fetchLiveIssueRankings(): Promise<RankingEntry[]> {
+async function fetchJsonBinLatest(): Promise<{ ok: boolean; entries: RankingEntry[] }> {
   try {
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 3500);
-    const res = await fetch(
-      `https://api.github.com/repos/${REPO_SLUG}/issues?labels=clear-ranking&state=open&per_page=50`,
-      {
-        headers: { Accept: 'application/vnd.github+json' },
-        signal: controller.signal,
-      }
-    );
+    const timer = window.setTimeout(() => controller.abort(), 6500);
+    const res = await fetch(`${JSONBIN_BASE_URL}/latest`, {
+      method: 'GET',
+      headers: {
+        'X-Master-Key': JSONBIN_MASTER_KEY,
+      },
+      cache: 'no-store',
+      signal: controller.signal,
+    });
     window.clearTimeout(timer);
-    if (!res.ok) return [];
-    const issues = await res.json();
-    if (!Array.isArray(issues)) return [];
-    const out: RankingEntry[] = [];
-    for (const iss of issues) {
-      const body = typeof iss?.body === 'string' ? iss.body : '';
-      const m = body.match(/```json\s*([\s\S]*?)```/);
-      if (!m) continue;
-      try {
-        const d = JSON.parse(m[1]);
-        const elapsedSec = Math.round(Number(d.elapsedSec) * 10) / 10;
-        const difficulty = d.difficulty === 'nightmare' ? 'nightmare' : d.difficulty === 'normal' ? 'normal' : null;
-        if (!difficulty || !Number.isFinite(elapsedSec) || elapsedSec < 25 || elapsedSec > 7200) continue;
-        const entry: RankingEntry = {
-          id: String(d.id || `gh-${iss.number}`),
-          name: sanitizePlayerName(d.name || iss?.user?.login || '') || '脱出者',
-          elapsedSec,
-          difficulty,
-          notesRead: Math.max(0, Math.min(8, Math.floor(Number(d.notesRead) || 0))),
-          totalNotes: 8,
-          chasesSurvived: Math.max(0, Math.floor(Number(d.chasesSurvived) || 0)),
-          coinsTossed: Math.max(0, Math.floor(Number(d.coinsTossed) || 0)),
-          clearedAt: typeof iss.created_at === 'string' ? iss.created_at : new Date().toISOString(),
-          source: 'live',
-        };
-        if (d.sig && d.sig !== computeSignature(entry)) continue;
-        out.push(entry);
-      } catch {}
+    if (!res.ok) return { ok: false, entries: [] };
+    const payload = await res.json();
+    const record = payload?.record ?? payload;
+    const rawList = Array.isArray(record?.entries) ? record.entries : [];
+    const entries: RankingEntry[] = [];
+    for (const item of rawList) {
+      const e = normalizeEntry(item, 'global');
+      if (e) entries.push(e);
     }
-    return out;
+    return { ok: true, entries: sortRankings(entries) };
   } catch {
-    return [];
+    return { ok: false, entries: [] };
   }
 }
 
@@ -273,18 +192,78 @@ export interface MergedRankingResult {
 
 export async function fetchMergedRankings(): Promise<MergedRankingResult> {
   const local = loadLocalRankings();
-  const [globalRes, liveList] = await Promise.all([
-    fetchStaticGlobalRankings(),
-    fetchLiveIssueRankings(),
-  ]);
+  const remote = await fetchJsonBinLatest();
 
   const byId = new Map<string, RankingEntry>();
   for (const e of local) byId.set(e.id, e);
-  for (const e of liveList) byId.set(e.id, e);
-  for (const e of globalRes.entries) byId.set(e.id, e);
+  for (const e of remote.entries) byId.set(e.id, e);
 
   return {
     entries: sortRankings(Array.from(byId.values())).slice(0, 100),
-    onlineSynced: globalRes.ok || liveList.length > 0,
+    onlineSynced: remote.ok,
+  };
+}
+
+export interface SubmitRankingResult {
+  ok: boolean;
+  entries: RankingEntry[];
+  entry: RankingEntry;
+}
+
+/**
+ * Automatically read-merge-write the clear record to JSONBin.io.
+ * Only executes PUT if the preceding GET succeeded, preventing accidental data loss if offline.
+ */
+export async function submitRankingToJsonBin(entry: RankingEntry): Promise<SubmitRankingResult> {
+  saveLocalRanking(entry);
+
+  const remote = await fetchJsonBinLatest();
+  if (!remote.ok) {
+    const local = loadLocalRankings();
+    return { ok: false, entries: local, entry };
+  }
+
+  const byId = new Map<string, RankingEntry>();
+  for (const e of remote.entries) byId.set(e.id, e);
+  const storedEntry: RankingEntry = { ...entry, source: 'global' };
+  byId.set(storedEntry.id, storedEntry);
+
+  const mergedGlobal = sortRankings(Array.from(byId.values())).slice(0, 100);
+  const wireEntries = mergedGlobal.map(({ source: _src, ...rest }) => rest);
+
+  try {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 7500);
+    const putRes = await fetch(JSONBIN_BASE_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_MASTER_KEY,
+      },
+      body: JSON.stringify({
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        entries: wireEntries,
+      }),
+      signal: controller.signal,
+    });
+    window.clearTimeout(timer);
+    if (!putRes.ok) {
+      return { ok: false, entries: mergedGlobal, entry };
+    }
+  } catch {
+    return { ok: false, entries: mergedGlobal, entry };
+  }
+
+  // Merge any remaining local-only runs into the returned view
+  const local = loadLocalRankings();
+  const displayMap = new Map<string, RankingEntry>();
+  for (const e of local) displayMap.set(e.id, e);
+  for (const e of mergedGlobal) displayMap.set(e.id, e);
+
+  return {
+    ok: true,
+    entries: sortRankings(Array.from(displayMap.values())).slice(0, 100),
+    entry: storedEntry,
   };
 }

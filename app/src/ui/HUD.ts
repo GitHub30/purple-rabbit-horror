@@ -15,7 +15,6 @@ import {
 } from '../station/shinjukuMap';
 import { TerminalInstance } from '../station/ShinjukuStation';
 import {
-  buildGitHubSubmitUrl,
   computeClearRank,
   createRunEntry,
   fetchMergedRankings,
@@ -30,6 +29,7 @@ import {
   saveLocalRanking,
   savePlayerName,
   sortRankings,
+  submitRankingToJsonBin,
 } from './Leaderboard';
 
 export type ScreenName = 'LOADING' | 'TITLE' | 'PLAYING' | 'PAUSED' | 'NOTE' | 'JUMPSCARE' | 'GAMEOVER' | 'VICTORY';
@@ -122,7 +122,7 @@ export class HUD {
   private registeredRunEntry: RankingEntry | null = null;
   private cachedRankings: RankingEntry[] = [];
   private activeRankingFilter: RankingFilter = 'all';
-  private onlineSynced = false;
+  private syncingRanking = false;
   mapOpen = false;
 
   constructor(cb: HUDCallbacks) {
@@ -144,14 +144,12 @@ export class HUD {
 
     this.rankingFormEl?.addEventListener('submit', (e) => {
       e.preventDefault();
-      this.handleRegisterRanking();
+      void this.handleRegisterRanking();
     });
 
     this.rankingGlobalBtn?.addEventListener('click', () => {
       if (!this.registeredRunEntry) return;
-      const url = buildGitHubSubmitUrl(this.registeredRunEntry);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      this.rankingFeedbackEl.textContent = '送信ページを開きました（送信後「↻」で反映）';
+      void this.syncRunToJsonBin(this.registeredRunEntry, true);
     });
 
     this.rankingRefreshBtn?.addEventListener('click', () => {
@@ -840,30 +838,37 @@ export class HUD {
         chasesSurvived: stats.chasesSurvived,
         coinsTossed: stats.coinsTossed,
       };
-      this.registeredRunEntry = null;
-      this.rankingNameInputEl.value = loadSavedPlayerName();
-      this.rankingRegisterBtn.textContent = '登録';
+
+      const savedName = loadSavedPlayerName();
+      this.rankingNameInputEl.value = savedName;
+      const initialEntry = createRunEntry(savedName || '新宿からの脱出者', this.activeVictoryRun);
+      this.registeredRunEntry = initialEntry;
+      saveLocalRanking(initialEntry);
+
+      this.rankingRegisterBtn.textContent = '名前を反映';
       this.rankingRegisterBtn.disabled = false;
       this.rankingGlobalBtn.hidden = true;
-      this.rankingFeedbackEl.textContent = '名前を入力して記録をランキングへ残そう';
+      this.rankingFeedbackEl.textContent = '全体ランキングへ自動送信中…';
       this.rankingFeedbackEl.classList.remove('is-done');
+
       this.activeRankingFilter = 'all';
       for (const b of this.rankingTabEls) {
         const active = b.dataset.rankFilter === 'all';
         b.classList.toggle('is-active', active);
         b.setAttribute('aria-selected', active ? 'true' : 'false');
       }
+
       this.cachedRankings = loadLocalRankings();
       this.renderRankingList();
       this.setScreen('VICTORY');
-      void this.refreshRankings();
+      void this.syncRunToJsonBin(initialEntry, false);
     } else {
       this.gameoverStatsEl.innerHTML = html;
       this.setScreen('GAMEOVER');
     }
   }
 
-  private handleRegisterRanking(): void {
+  private async handleRegisterRanking(): Promise<void> {
     if (!this.activeVictoryRun) return;
     const typed = sanitizePlayerName(this.rankingNameInputEl.value);
     const finalName = typed || '新宿からの脱出者';
@@ -876,21 +881,59 @@ export class HUD {
 
     const others = this.cachedRankings.filter((e) => e.id !== entry.id);
     this.cachedRankings = sortRankings([...others, entry]);
-    this.rankingRegisterBtn.textContent = '更新';
-    this.rankingGlobalBtn.hidden = false;
-
-    const allRank = this.cachedRankings.findIndex((e) => e.id === entry.id) + 1;
-    this.rankingFeedbackEl.textContent = `登録完了！ 現在 ${allRank}位（${formatClearTime(entry.elapsedSec)}）`;
-    this.rankingFeedbackEl.classList.add('is-done');
     this.renderRankingList(true);
+    await this.syncRunToJsonBin(entry, true);
+  }
+
+  private async syncRunToJsonBin(entry: RankingEntry, isNameUpdate: boolean): Promise<void> {
+    if (this.syncingRanking) return;
+    this.syncingRanking = true;
+    this.rankingRegisterBtn.disabled = true;
+    this.rankingGlobalBtn.hidden = true;
+    this.rankingSyncBadgeEl.textContent = '送信中…';
+    this.rankingRefreshBtn.classList.add('is-spinning');
+    this.rankingFeedbackEl.classList.remove('is-done');
+    this.rankingFeedbackEl.textContent = isNameUpdate
+      ? '名前を全体ランキングへ反映中…'
+      : '全体ランキングへ自動送信中…';
+
+    try {
+      const res = await submitRankingToJsonBin(entry);
+      if (this.registeredRunEntry?.id === entry.id) {
+        this.registeredRunEntry = res.entry;
+      }
+      this.cachedRankings = res.entries;
+      const allRank = this.cachedRankings.findIndex((e) => e.id === entry.id) + 1;
+      if (res.ok) {
+        this.rankingSyncBadgeEl.textContent = 'オンライン同期済';
+        this.rankingFeedbackEl.textContent = isNameUpdate
+          ? `全体ランキングへ反映完了！ 現在 ${allRank}位（${formatClearTime(entry.elapsedSec)}）`
+          : `全体ランキングへ自動送信完了！ 現在 ${allRank}位（名前変更可）`;
+        this.rankingFeedbackEl.classList.add('is-done');
+        this.rankingGlobalBtn.hidden = true;
+      } else {
+        this.rankingSyncBadgeEl.textContent = 'ローカル保存';
+        this.rankingFeedbackEl.textContent = `ローカル保存済（現在 ${allRank}位・通信失敗）`;
+        this.rankingGlobalBtn.hidden = false;
+      }
+    } catch {
+      this.rankingSyncBadgeEl.textContent = 'ローカル保存';
+      this.rankingFeedbackEl.textContent = 'ローカル保存済（全体送信は再試行できます）';
+      this.rankingGlobalBtn.hidden = false;
+    } finally {
+      this.syncingRanking = false;
+      this.rankingRegisterBtn.disabled = false;
+      this.rankingRefreshBtn.classList.remove('is-spinning');
+      this.renderRankingList(true);
+    }
   }
 
   private async refreshRankings(): Promise<void> {
+    if (this.syncingRanking) return;
     this.rankingSyncBadgeEl.textContent = '同期中…';
     this.rankingRefreshBtn.classList.add('is-spinning');
     try {
       const { entries, onlineSynced } = await fetchMergedRankings();
-      this.onlineSynced = onlineSynced;
       const merged = new Map<string, RankingEntry>();
       for (const e of entries) merged.set(e.id, e);
       if (this.registeredRunEntry && !merged.has(this.registeredRunEntry.id)) {
@@ -910,47 +953,17 @@ export class HUD {
     const filter = this.activeRankingFilter;
     const base = this.cachedRankings.filter((e) => filter === 'all' || e.difficulty === filter);
 
-    const showProvisional =
-      this.activeVictoryRun !== null &&
-      this.registeredRunEntry === null &&
-      (filter === 'all' || this.activeVictoryRun.difficulty === filter);
-
-    let displayEntries: Array<{ entry: RankingEntry; isCurrent: boolean; isProvisional: boolean }> = base.map(
-      (entry) => ({
-        entry,
-        isCurrent: this.registeredRunEntry !== null && entry.id === this.registeredRunEntry.id,
-        isProvisional: false,
-      })
-    );
-
-    if (showProvisional && this.activeVictoryRun) {
-      const provEntry: RankingEntry = {
-        id: '__provisional__',
-        name: sanitizePlayerName(this.rankingNameInputEl.value) || 'あなた（未登録）',
-        elapsedSec: this.activeVictoryRun.elapsedSec,
-        difficulty: this.activeVictoryRun.difficulty,
-        notesRead: this.activeVictoryRun.notesRead,
-        totalNotes: this.activeVictoryRun.totalNotes,
-        chasesSurvived: this.activeVictoryRun.chasesSurvived,
-        coinsTossed: this.activeVictoryRun.coinsTossed,
-        clearedAt: new Date().toISOString(),
-        source: 'local',
-      };
-      const combined = sortRankings([...base, provEntry]);
-      displayEntries = combined.map((entry) => ({
-        entry,
-        isCurrent: entry.id === '__provisional__',
-        isProvisional: entry.id === '__provisional__',
-      }));
-    }
+    const displayEntries = base.map((entry) => ({
+      entry,
+      isCurrent: this.registeredRunEntry !== null && entry.id === this.registeredRunEntry.id,
+    }));
 
     const totalCount = displayEntries.length;
     const myIdx = displayEntries.findIndex((item) => item.isCurrent);
     if (this.activeVictoryRun) {
       const diffText = filter === 'all' ? '総合' : filter === 'nightmare' ? '悪夢' : '通常';
       if (myIdx >= 0) {
-        const label = this.registeredRunEntry ? 'あなたの順位' : '暫定順位';
-        this.rankingYourBannerEl.textContent = `${diffText} ${label}: ${myIdx + 1}位 / ${totalCount}人（${formatClearTime(
+        this.rankingYourBannerEl.textContent = `${diffText} あなたの順位: ${myIdx + 1}位 / ${totalCount}人（${formatClearTime(
           this.activeVictoryRun.elapsedSec
         )}）`;
         this.rankingYourBannerEl.hidden = false;
@@ -966,21 +979,20 @@ export class HUD {
     if (displayEntries.length === 0) {
       const empty = document.createElement('li');
       empty.className = 'ranking-empty';
-      empty.textContent = 'この難易度のクリア記録はまだありません。最初の脱出者として登録しましょう！';
+      empty.textContent = 'この難易度のクリア記録はまだありません。最初の脱出者になりましょう！';
       this.rankingListEl.appendChild(empty);
       return;
     }
 
     let currentRowEl: HTMLLIElement | null = null;
     const topSlice = displayEntries.slice(0, 30);
-    // Ensure current player's row is always visible even if below rank 30
     if (myIdx >= 30) {
       topSlice.push(displayEntries[myIdx]);
     }
 
     topSlice.forEach((item, listIdx) => {
       const rankNum = item.isCurrent && myIdx >= 30 ? myIdx + 1 : listIdx + 1;
-      const { entry, isCurrent, isProvisional } = item;
+      const { entry, isCurrent } = item;
       const grade = computeClearRank(entry.elapsedSec, entry.difficulty);
 
       const li = document.createElement('li');
@@ -992,12 +1004,10 @@ export class HUD {
         li.classList.add('is-current');
         currentRowEl = li;
       }
-      if (isProvisional) li.classList.add('is-provisional');
 
       const posEl = document.createElement('span');
       posEl.className = 'rcol-pos';
-      posEl.textContent =
-        rankNum === 1 ? '1' : rankNum === 2 ? '2' : rankNum === 3 ? '3' : String(rankNum);
+      posEl.textContent = String(rankNum);
 
       const nameWrap = document.createElement('span');
       nameWrap.className = 'rcol-name';
@@ -1015,12 +1025,7 @@ export class HUD {
       diffBadge.textContent = entry.difficulty === 'nightmare' ? '悪夢' : '通常';
       metaWrap.appendChild(diffBadge);
 
-      if (isProvisional) {
-        const tag = document.createElement('span');
-        tag.className = 'ranking-src-tag is-prov';
-        tag.textContent = '未登録';
-        metaWrap.appendChild(tag);
-      } else if (entry.source === 'global' || entry.source === 'live') {
+      if (entry.source === 'global') {
         const tag = document.createElement('span');
         tag.className = 'ranking-src-tag is-global';
         tag.textContent = '全体';
@@ -1028,12 +1033,12 @@ export class HUD {
       } else {
         const tag = document.createElement('span');
         tag.className = 'ranking-src-tag is-local';
-        tag.textContent = '自分';
+        tag.textContent = 'ローカル';
         metaWrap.appendChild(tag);
       }
 
       const dateText = formatShortDate(entry.clearedAt);
-      if (dateText && !isProvisional) {
+      if (dateText) {
         const dtEl = document.createElement('span');
         dtEl.className = 'ranking-date-tag';
         dtEl.textContent = `メモ${entry.notesRead}/${entry.totalNotes} · ${dateText}`;

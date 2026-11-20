@@ -319,7 +319,7 @@
           <div id="victory-stats" class="stats-grid victory-stats-grid"></div>
 
           <form id="ranking-form" class="ranking-form" autocomplete="off">
-            <label for="ranking-name-input" class="ranking-form-label">クリア記録をランキングに登録</label>
+            <label for="ranking-name-input" class="ranking-form-label">脱出者ネーム（全体ランキング自動送信）</label>
             <div class="ranking-input-row">
               <input
                 id="ranking-name-input"
@@ -328,12 +328,12 @@
                 placeholder="ニックネーム（1〜16文字）"
                 class="ranking-input"
               />
-              <button type="submit" id="btn-ranking-register" class="btn-rank-save">登録</button>
+              <button type="submit" id="btn-ranking-register" class="btn-rank-save">名前を反映</button>
             </div>
             <div class="ranking-submit-row">
-              <span id="ranking-feedback" class="ranking-feedback">名前を入力して記録を残そう</span>
+              <span id="ranking-feedback" class="ranking-feedback">全体ランキングへ自動送信中…</span>
               <button type="button" id="btn-ranking-global" class="btn-rank-global" hidden>
-                全体ランキングへ送信 ↗
+                再送信 ↻
               </button>
             </div>
           </form>
