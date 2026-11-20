@@ -185,7 +185,16 @@ class ShinjukuHorrorGame {
     });
 
     (window as unknown as { __GAME__: ShinjukuHorrorGame }).__GAME__ = this;
+    this.registerPWA();
     this.init();
+  }
+
+  private registerPWA(): void {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
   }
 
   private async init(): Promise<void> {
@@ -243,7 +252,13 @@ class ShinjukuHorrorGame {
       mozFullScreenElement?: Element;
       msFullscreenElement?: Element;
     };
+    const nav = navigator as Navigator & { standalone?: boolean };
+    const isStandalonePWA =
+      nav.standalone === true ||
+      window.matchMedia?.('(display-mode: fullscreen)').matches === true ||
+      window.matchMedia?.('(display-mode: standalone)').matches === true;
     return !!(
+      isStandalonePWA ||
       doc.fullscreenElement ||
       doc.webkitFullscreenElement ||
       doc.mozFullScreenElement ||
@@ -266,9 +281,13 @@ class ShinjukuHorrorGame {
   private enterFullscreenAndLandscape(): void {
     const el = document.documentElement as HTMLElement & {
       webkitRequestFullscreen?: () => Promise<void> | void;
+      webkitEnterFullscreen?: () => void;
       mozRequestFullScreen?: () => Promise<void> | void;
       msRequestFullscreen?: () => Promise<void> | void;
     };
+    try {
+      window.scrollTo(0, 1);
+    } catch {}
     this.pendingLandscapeLock = true;
     if (this.isFullscreen()) {
       this.pendingLandscapeLock = false;
@@ -299,6 +318,10 @@ class ShinjukuHorrorGame {
         }
       } else if (typeof el.webkitRequestFullscreen === 'function') {
         prom = el.webkitRequestFullscreen();
+      } else if (typeof el.webkitEnterFullscreen === 'function') {
+        el.webkitEnterFullscreen();
+        finish();
+        return;
       } else if (typeof el.mozRequestFullScreen === 'function') {
         prom = el.mozRequestFullScreen();
       } else if (typeof el.msRequestFullscreen === 'function') {
@@ -414,8 +437,9 @@ class ShinjukuHorrorGame {
   }
 
   onResize(): void {
-    const w = window.innerWidth;
-    const h = Math.max(1, window.innerHeight);
+    const vv = window.visualViewport;
+    const w = Math.round(vv ? vv.width : window.innerWidth);
+    const h = Math.max(1, Math.round(vv ? vv.height : window.innerHeight));
     const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
     const aspect = w / h;
     this.camera.aspect = aspect;

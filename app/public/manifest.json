@@ -1,0 +1,35 @@
+{
+  "id": "./",
+  "name": "紫のうさぎ — 新宿駅 00:47 サバイバルホラー",
+  "short_name": "紫のうさぎ",
+  "description": "終電後のJR新宿駅B1F＆地下街全域（180m×116m）から5か所のSuicaチャージ機を巡り東口へ脱出する一人称3Dサバイバルホラー",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#060a0f",
+  "theme_color": "#060a0f",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "./icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
