@@ -2,12 +2,19 @@ import * as THREE from 'three';
 import './styles/main.css';
 import { CollisionSystem } from './station/CollisionSystem';
 import {
+  CELL,
+  CORE_OX,
+  CORE_OZ,
   EXIT_GATE_INTERACT,
+  EYE_OF_SHINJUKU_POS,
   LORE_NOTES,
   PAYPHONE_POS,
   PEDESTAL_POS,
   PHOTOBOOTH_POS,
-  VICTORY_X,
+  RABBIT_TITLE_POS,
+  VICTORY_X_MAX,
+  VICTORY_X_MIN,
+  VICTORY_Z,
 } from './station/shinjukuMap';
 import { createShinjukuEnvMap } from './station/shinjukuTextures';
 import {
@@ -22,6 +29,9 @@ import { HorrorAudio } from './audio/HorrorAudio';
 import { PlayerController } from './player/PlayerController';
 import { PostFX } from './rendering/PostFX';
 import { HUD, ScreenName } from './ui/HUD';
+
+const CORE_DX = CORE_OX * CELL;
+const CORE_DZ = CORE_OZ * CELL;
 
 type InteractTarget =
   | { kind: 'terminal'; item: TerminalInstance }
@@ -69,6 +79,7 @@ class ShinjukuHorrorGame {
   private wall456SubliminalCooldown = 14;
   private photoBoothTriggered = false;
   private payphoneTriggered = false;
+  private eyeOfShinjukuTriggered = false;
   private payphoneRingTimer = 0;
   private currentTarget: InteractTarget | null = null;
   private activeChargingTerminal: TerminalInstance | null = null;
@@ -107,8 +118,8 @@ class ShinjukuHorrorGame {
 
     // Moody chiaroscuro title showcase spotlight on the 2.2m purple rabbit in 東西自由通路!
     this.titleLight = new THREE.SpotLight(0xdcece8, 16, 22, Math.PI * 0.28, 0.68, 1.4);
-    this.titleLight.position.set(59.2, 3.4, 28.2);
-    this.titleLight.target.position.set(62.8, 1.25, 30.1);
+    this.titleLight.position.set(59.2 + CORE_DX, 3.4, 28.2 + CORE_DZ);
+    this.titleLight.target.position.set(RABBIT_TITLE_POS.x, 1.25, RABBIT_TITLE_POS.z);
     this.scene.add(this.titleLight, this.titleLight.target);
 
     this.collision = new CollisionSystem();
@@ -326,6 +337,7 @@ class ShinjukuHorrorGame {
     this.wall456SubliminalCooldown = 14;
     this.photoBoothTriggered = false;
     this.payphoneTriggered = false;
+    this.eyeOfShinjukuTriggered = false;
     this.payphoneRingTimer = 0;
     this.currentTarget = null;
     this.activeChargingTerminal = null;
@@ -349,8 +361,8 @@ class ShinjukuHorrorGame {
 
     const mapHint = this.player.touch.enabled ? '（右下の「構内図」で確認）' : '（[M]で新宿駅構内図）';
     this.hud.showSubtitle(
-      `00:47 新宿駅B1F全域（丸ノ内線・西口広場・1〜16番線・中央通路）。東口出口を開くには、構内5か所のチャージ機で¥1,000貯める必要がある。${mapHint}`,
-      6.8
+      `00:47 新宿地下迷宮全域（新宿の目・動く歩道・大江戸線E01・丸ノ内線M08・京王モール・サブナード・JR1〜16番線・新南口/バスタ新宿）。5か所のチャージ機で¥1,000貯め、東口出口から脱出せよ。${mapHint}`,
+      7.2
     );
   }
 
@@ -470,15 +482,23 @@ class ShinjukuHorrorGame {
       1,
       { x: this.rabbit.root.position.x, z: this.rabbit.root.position.z },
       0,
-      { x: 59.0, z: 29.5 }
+      { x: 59.0 + CORE_DX, z: 29.5 + CORE_DZ }
     );
     const sway = Math.sin(this.totalElapsed * 0.38) * 0.38;
     if (this.camera.aspect < 0.92) {
-      this.camera.position.set(56.2, 1.54 + Math.sin(this.totalElapsed * 0.7) * 0.03, 29.1 + sway * 0.25);
-      this.camera.lookAt(66.0, 1.12, 30.6);
+      this.camera.position.set(
+        56.2 + CORE_DX,
+        1.54 + Math.sin(this.totalElapsed * 0.7) * 0.03,
+        29.1 + CORE_DZ + sway * 0.25
+      );
+      this.camera.lookAt(66.0 + CORE_DX, 1.12, 30.6 + CORE_DZ);
     } else {
-      this.camera.position.set(57.2, 1.56 + Math.sin(this.totalElapsed * 0.7) * 0.04, 28.7 + sway * 0.42);
-      this.camera.lookAt(68.0, 1.26, 30.8);
+      this.camera.position.set(
+        57.2 + CORE_DX,
+        1.56 + Math.sin(this.totalElapsed * 0.7) * 0.04,
+        28.7 + CORE_DZ + sway * 0.42
+      );
+      this.camera.lookAt(68.0 + CORE_DX, 1.26, 30.8 + CORE_DZ);
     }
     this.titleLight.intensity = 16 * (Math.sin(this.totalElapsed * 29) > 0.9 ? 0.3 : 1);
     this.player.hideFlashlight();
@@ -596,7 +616,8 @@ class ShinjukuHorrorGame {
       this.sound,
       res.fearLevel,
       this.brightnessMult,
-      (x, z) => this.station.isPointOnPuddle(x, z)
+      (x, z) => this.station.isPointOnPuddle(x, z),
+      (x, z) => this.station.getMovingWalkwayDrift(x, z)
     );
 
     this.station.update(
@@ -621,7 +642,13 @@ class ShinjukuHorrorGame {
 
     this.updateInteractions(dt);
 
-    if (this.exitGateUnlocked && this.player.position.x > VICTORY_X) {
+    // Strictly scoped East Exit stairwell victory box (prevents Subnade at C40..43 from ever false-triggering!)
+    if (
+      this.exitGateUnlocked &&
+      this.player.position.x > VICTORY_X_MIN &&
+      this.player.position.x < VICTORY_X_MAX &&
+      Math.abs(this.player.position.z - VICTORY_Z) < 5.5
+    ) {
       this.triggerVictory();
       return;
     }
@@ -694,6 +721,23 @@ class ShinjukuHorrorGame {
       }
     }
 
+    // 1b. Yoshiko Miyashita's 10m 『新宿の目』(Eye of Shinjuku) eerie tracking pupil chill!
+    if (!this.eyeOfShinjukuTriggered && !this.player.hiddenCloset) {
+      const dEye = Math.hypot(
+        this.player.position.x - EYE_OF_SHINJUKU_POS.x,
+        this.player.position.z - EYE_OF_SHINJUKU_POS.z
+      );
+      if (dEye < 7.5) {
+        this.eyeOfShinjukuTriggered = true;
+        this.sound.playStareChill();
+        this.glitchPulse = Math.max(this.glitchPulse, 0.42);
+        this.hud.showSubtitle(
+          '……西口の『新宿の目』のアクリル瞳孔が、ゆっくりこっちを追って動いている……',
+          5.0
+        );
+      }
+    }
+
     // 2. Green Public Payphone eerie ringing in West Passage!
     if (!this.payphoneTriggered && this.chargesCompleted >= 1 && !this.player.hiddenCloset) {
       const dPhone = Math.hypot(
@@ -718,7 +762,8 @@ class ShinjukuHorrorGame {
 
     // 3. Phantom Yamanote Line train roaring past above 13・14 / 15・16番線 stairwell!
     this.phantomTrainCooldown -= dt;
-    const nearYamanote = Math.hypot(this.player.position.x - 44, this.player.position.z - 52) < 14.5;
+    const nearYamanote =
+      Math.hypot(this.player.position.x - (44 + CORE_DX), this.player.position.z - (52 + CORE_DZ)) < 14.5;
     if (
       this.phantomTrainCooldown <= 0 &&
       !isChasing &&
@@ -754,10 +799,10 @@ class ShinjukuHorrorGame {
       this.chargesCompleted >= 1 &&
       !isChasing &&
       !this.player.hiddenCloset &&
-      this.player.position.z >= 24 &&
-      this.player.position.z <= 38 &&
-      this.player.position.x >= 34 &&
-      this.player.position.x <= 84
+      this.player.position.z >= 24 + CORE_DZ &&
+      this.player.position.z <= 38 + CORE_DZ &&
+      this.player.position.x >= 34 + CORE_DX &&
+      this.player.position.x <= 84 + CORE_DX
     ) {
       this.wall456SubliminalCooldown = 24 + Math.random() * 18;
       this.station.triggerWall456SubliminalFlash();

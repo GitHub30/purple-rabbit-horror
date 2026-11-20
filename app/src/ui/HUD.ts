@@ -1,4 +1,18 @@
-import { CELL, COLS, getShinjukuZone, HIDING_SPOTS, LoreNoteDef, ROWS, SHINJUKU_GRID } from '../station/shinjukuMap';
+import {
+  CELL,
+  COLS,
+  CORE_OX,
+  CORE_OZ,
+  EYE_OF_SHINJUKU_POS,
+  getShinjukuZone,
+  HIDING_SPOTS,
+  isKeioMallZone,
+  isSubnadeZone,
+  LoreNoteDef,
+  MOVING_WALKWAY_SPAN,
+  ROWS,
+  SHINJUKU_GRID,
+} from '../station/shinjukuMap';
 import { TerminalInstance } from '../station/ShinjukuStation';
 
 export type ScreenName = 'LOADING' | 'TITLE' | 'PLAYING' | 'PAUSED' | 'NOTE' | 'JUMPSCARE' | 'GAMEOVER' | 'VICTORY';
@@ -301,20 +315,23 @@ export class HUD {
     const padY = 14;
     const cw = (w - padX * 2) / COLS;
     const ch = (h - padY * 2) / ROWS;
+    const X = (col: number) => padX + col * cw;
+    const Y = (row: number) => padY + row * ch;
+    const OX = CORE_OX;
+    const OZ = CORE_OZ;
 
-    // 1. Real-world Shinjuku Station B1F 35x23 Zone Floorplan
+    // 1. Real-world Shinjuku Underground Megacomplex 45x29 (180m x 116m) Zone Floorplan
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const cell = SHINJUKU_GRID[r][c];
-        const x = padX + c * cw;
-        const y = padY + r * ch;
+        const x = X(c);
+        const y = Y(r);
 
         if (cell === 1) {
-          // Architectural highlights embedded in structural walls
-          if (r === 10 && c >= 10 && c <= 12) {
+          if (r === 10 + OZ && c >= 10 + OX && c <= 12 + OX) {
             ctx.fillStyle = '#1b3d33'; // きっぷうりば
             ctx.fillRect(x, y, cw - 0.5, ch - 0.5);
-          } else if (r === 10 && c >= 22 && c <= 30) {
+          } else if (r === 10 + OZ && c >= 22 + OX && c <= 30 + OX) {
             ctx.fillStyle = '#2d2036'; // ルミネエスト B1F storefront
             ctx.fillRect(x, y, cw - 0.5, ch - 0.5);
           }
@@ -328,21 +345,30 @@ export class HUD {
         }
 
         if (cell === 6) {
-          // Private Rail & Subway Glass Ticket-Gate Bays
-          if (r === 1) ctx.fillStyle = '#c82626'; // 東京メトロ丸ノ内線 M08 (Red)
-          else if (c === 1) ctx.fillStyle = '#1b6dd6'; // 小田急線 OH01 (Cobalt Blue)
-          else ctx.fillStyle = '#c41878'; // 京王線 KO01 (Magenta)
+          if (r === 1 && c <= 5) ctx.fillStyle = '#b6007a'; // 都営大江戸線 E01 (Ruby Magenta)
+          else if (r === 1) ctx.fillStyle = '#c8962e'; // 新宿サブナード北口 (amber)
+          else if (r === 3) ctx.fillStyle = '#c82626'; // 東京メトロ丸ノ内線 M08 (Red)
+          else if (c === 6) ctx.fillStyle = '#1b6dd6'; // 小田急線 OH01 (Cobalt Blue)
+          else if (r === 22) ctx.fillStyle = '#c41878'; // 京王線 KO01 (Magenta)
+          else if (c === 1) ctx.fillStyle = '#6cbb5a'; // 都営新宿線 S01 (Leaf Green)
+          else ctx.fillStyle = '#2a9a50'; // JR新南改札 (JR Green)
           ctx.fillRect(x, y, cw - 0.5, ch - 0.5);
           continue;
         }
 
-        const isEastExit = c >= 33 && r >= 6 && r <= 8;
-        const isMetroPromenade = r >= 1 && r <= 3 && c >= 6 && c <= 30;
-        const isWestPlaza = c >= 1 && c <= 5 && r >= 1 && r <= 19;
-        const isFreePassage = r >= 6 && r <= 9 && c >= 6 && c <= 32;
-        const isNexTunnel = c >= 22 && c <= 24 && r >= 19 && r <= 21;
-        const isEastWing = c >= 31 && c <= 33 && r >= 10 && r <= 20;
-        const isPaidConcourse = c >= 7 && c <= 29 && r >= 11 && r <= 20;
+        const isEastExit = c >= 37 && c <= 38 && r >= 8 && r <= 10;
+        const isSubnade = isSubnadeZone(c, r);
+        const isKeioMall = isKeioMallZone(c, r);
+        const isOedo = c >= 2 && c <= 5 && r >= 2 && r <= 5;
+        const isEyeWalkway = c >= 1 && c <= 5 && r >= 8 && r <= 11;
+        const isWestConnector = c >= 1 && c <= 5 && r >= 12 && r <= 26;
+        const isMetroPromenade = r >= 3 && r <= 5 && c >= 11 && c <= 35;
+        const isWestPlaza = c >= 6 && c <= 10 && r >= 3 && r <= 23;
+        const isFreePassage = r >= 8 && r <= 11 && c >= 11 && c <= 36;
+        const isNexTunnel = c >= 27 && c <= 29 && r >= 21 && r <= 23;
+        const isSouthConcourse = (c >= 14 && c <= 38 && r >= 24 && r <= 26) || (c >= 20 && c <= 22 && r >= 21 && r <= 23);
+        const isEastWing = c >= 36 && c <= 38 && r >= 6 && r <= 23;
+        const isPaidConcourse = c >= 12 && c <= 34 && r >= 13 && r <= 22;
 
         if (isEastExit) {
           ctx.fillStyle = exitReady ? '#1f7c46' : '#581c24';
@@ -350,12 +376,24 @@ export class HUD {
           ctx.fillStyle = '#6042ac'; // J・ADビジョン新宿駅 column
         } else if (cell === 4) {
           ctx.fillStyle = '#14211c'; // Platform stair/escalator bay
+        } else if (isSubnade) {
+          ctx.fillStyle = r <= 5 ? '#3a3020' : '#2e2618'; // 新宿サブナード (oak wood & greenery)
+        } else if (isKeioMall) {
+          ctx.fillStyle = '#2c1f2e'; // 京王モール
+        } else if (isOedo) {
+          ctx.fillStyle = '#2e1a2a'; // 都営大江戸線 E01 コンコース
+        } else if (isEyeWalkway) {
+          ctx.fillStyle = '#1e2c3e'; // 新宿の目・動く歩道
+        } else if (isWestConnector) {
+          ctx.fillStyle = '#1a2430'; // 西新宿地下連絡道
         } else if (isNexTunnel) {
           ctx.fillStyle = '#2e1a20'; // 5・6番線 N'EX underground tunnel
+        } else if (isSouthConcourse) {
+          ctx.fillStyle = '#1d2c3a'; // JR南口・バスタ新宿 大コンコース
         } else if (isMetroPromenade) {
           ctx.fillStyle = '#241c24'; // 東京メトロ メトロプロムナード
         } else if (isWestPlaza) {
-          ctx.fillStyle = r >= 13 && r <= 16 ? '#182b44' : r >= 18 ? '#271c32' : '#1b2938';
+          ctx.fillStyle = r >= 15 && r <= 18 ? '#182b44' : r >= 20 ? '#271c32' : '#1b2938';
         } else if (isFreePassage) {
           ctx.fillStyle = '#1f3445'; // 東西自由通路 / アルプス広場
         } else if (isEastWing) {
@@ -368,11 +406,10 @@ export class HUD {
 
         ctx.fillRect(x, y, cw - 0.5, ch - 0.5);
 
-        // Draw circular structural concrete column dot for cell === 5
         if (cell === 5) {
           ctx.fillStyle = '#5a6874';
           ctx.beginPath();
-          ctx.arc(x + cw * 0.5, y + ch * 0.5, Math.min(cw, ch) * 0.34, 0, Math.PI * 2);
+          ctx.arc(x + cw * 0.5, y + ch * 0.5, Math.min(cw, ch) * 0.32, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#9aa8b4';
           ctx.lineWidth = 0.8;
@@ -381,175 +418,279 @@ export class HUD {
       }
     }
 
-    // 2. Iconic West Plaza Circular Rotary Skylight Atrium ring (C1..5, R5..11)
+    // 2. West Plaza rotary skylight ring + Subnade サンデッキ広場 skylight oculus
     ctx.save();
-    ctx.strokeStyle = 'rgba(130, 178, 224, 0.35)';
-    ctx.lineWidth = 1.4;
     ctx.setLineDash([4, 3]);
+    ctx.lineWidth = 1.3;
+    ctx.strokeStyle = 'rgba(130, 178, 224, 0.35)';
     ctx.beginPath();
-    ctx.arc(padX + 3.5 * cw, padY + 8.5 * ch, 2.15 * cw, 0, Math.PI * 2);
+    ctx.arc(X(8.5), Y(10.5), 2.1 * cw, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(232, 200, 120, 0.4)';
+    ctx.beginPath();
+    ctx.arc(X(41.5), Y(3.6), 1.15 * cw, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
 
-    // 3. Highlight 『新宿ウォール456』 (45.6m LED along North wall of 東西自由通路, C9..20.4, R6)
+    // 3. 『新宿ウォール456』 (45.6m LED along North wall of 東西自由通路)
     ctx.fillStyle = '#38d8f4';
-    ctx.fillRect(padX + 9.0 * cw, padY + 6.0 * ch - 3.2, 11.4 * cw, 3.6);
+    ctx.fillRect(X(14.0), Y(8.0) - 3.2, 11.4 * cw, 3.6);
 
-    // 4. Tactile Yellow Guide Lines (メトロプロムナード / 東西自由通路 / 中央通路)
+    // 4. 『新宿の目』 golden illuminated eye icon (10m x 3.4m, North wall of R8)
+    const eyeCx = padX + (EYE_OF_SHINJUKU_POS.x / CELL) * cw;
+    const eyeCy = Y(8.0) + 3.5;
+    ctx.save();
+    ctx.fillStyle = 'rgba(248, 214, 120, 0.16)';
+    ctx.strokeStyle = '#f2cc62';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.ellipse(eyeCx, eyeCy, 1.25 * cw, 0.34 * ch, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#f2cc62';
+    ctx.beginPath();
+    ctx.arc(eyeCx, eyeCy, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 5. 動く歩道 dual belts (north belt → West, south belt → East)
+    const mwX0 = padX + (MOVING_WALKWAY_SPAN.xStart / CELL) * cw;
+    const mwX1 = padX + (MOVING_WALKWAY_SPAN.xEnd / CELL) * cw;
+    const mwY = padY + (MOVING_WALKWAY_SPAN.zCenter / CELL) * ch;
+    const drawBelt = (y: number, dir: 1 | -1) => {
+      ctx.fillStyle = 'rgba(150, 160, 172, 0.35)';
+      ctx.fillRect(mwX0, y - 2.2, mwX1 - mwX0, 4.4);
+      ctx.fillStyle = '#c4d2de';
+      for (let ax = mwX0 + 8; ax < mwX1 - 4; ax += 14) {
+        ctx.beginPath();
+        ctx.moveTo(ax + dir * 4, y);
+        ctx.lineTo(ax - dir * 2, y - 2.6);
+        ctx.lineTo(ax - dir * 2, y + 2.6);
+        ctx.closePath();
+        ctx.fill();
+      }
+    };
+    drawBelt(mwY - 3.6, -1);
+    drawBelt(mwY + 3.6, 1);
+
+    // 6. Tactile Yellow Guide Lines (北大動脈 / 東西自由通路 / 中央通路 / 南大動脈)
     ctx.strokeStyle = 'rgba(224, 186, 46, 0.30)';
     ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.moveTo(padX + 1.8 * cw, padY + 3.2 * ch);
-    ctx.lineTo(padX + 32.5 * cw, padY + 3.2 * ch);
-    ctx.moveTo(padX + 2.0 * cw, padY + 7.5 * ch);
-    ctx.lineTo(padX + 32.8 * cw, padY + 7.5 * ch);
-    ctx.moveTo(padX + 2.2 * cw, padY + 17.3 * ch);
-    ctx.lineTo(padX + 33.2 * cw, padY + 17.3 * ch);
+    ctx.moveTo(X(2.5), Y(4.7));
+    ctx.lineTo(X(43.5), Y(4.7));
+    ctx.moveTo(X(1.5), Y(9.0));
+    ctx.lineTo(X(38.6), Y(9.0));
+    ctx.moveTo(X(7.2), Y(19.3));
+    ctx.lineTo(X(38.2), Y(19.3));
+    ctx.moveTo(X(2.2), Y(25.5));
+    ctx.lineTo(X(38.6), Y(25.5));
+    ctx.moveTo(X(2.5), Y(9.0));
+    ctx.lineTo(X(2.5), Y(25.5));
+    ctx.moveTo(X(41.5), Y(2.5));
+    ctx.lineTo(X(41.5), Y(22.5));
     ctx.stroke();
 
-    // 5. ALL 16 JR PLATFORMS (15・16 -> 1・2番線 + 5・6番線 N'EX) Color-Coded Badges
+    // 7. ALL 16 JR PLATFORMS Color-Coded Badges
     const northPlatBadges: Array<[number, string, string, string]> = [
-      [8, '15·16', '山手/総武', '#7ac142'],
-      [11, '13·14', '総武/山手', '#e8be00'],
-      [14, '11·12', '中央快速', '#f15a22'],
-      [17, '9·10', '中央特急', '#2888d8'],
-      [20, '7·8', '中央快速', '#f15a22'],
+      [13, '15·16', '山手/総武', '#7ac142'],
+      [16, '13·14', '総武/山手', '#e8be00'],
+      [19, '11·12', '中央快速', '#f15a22'],
+      [22, '9·10', '中央特急', '#2888d8'],
+      [25, '7·8', '中央快速', '#f15a22'],
     ];
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
     for (const [col, label, sub, color] of northPlatBadges) {
-      const bx = padX + (col + 0.5) * cw;
+      const bx = X(col + 0.5);
       ctx.fillStyle = color;
-      ctx.fillRect(padX + col * cw, padY + 12 * ch, cw - 0.5, 3);
-      ctx.fillRect(padX + col * cw, padY + 14.85 * ch, cw - 0.5, 3);
+      ctx.fillRect(X(col), Y(14), cw - 0.5, 3);
+      ctx.fillRect(X(col), Y(16.85), cw - 0.5, 3);
       ctx.fillStyle = '#f2f7f4';
       ctx.font = 'bold 9.5px monospace';
-      ctx.fillText(label, bx, padY + 13.45 * ch);
+      ctx.fillText(label, bx, Y(15.55));
       ctx.fillStyle = '#9bb2a8';
       ctx.font = '600 7px sans-serif';
-      ctx.fillText(sub, bx, padY + 14.25 * ch);
+      ctx.fillText(sub, bx, Y(16.3));
     }
 
-    // East JR Platforms 3·4 (埼京/湘南) & 1·2 (湘南/埼京) at C25 & C28 (R14 & R19 stairs)
     const eastPlats: Array<[number, string, string, string]> = [
-      [25, '3·4', '埼京/湘南', '#00ac9a'],
-      [28, '1·2', '湘南/埼京', '#e21f26'],
+      [30, '3·4', '埼京/湘南', '#00ac9a'],
+      [33, '1·2', '湘南/埼京', '#e21f26'],
     ];
     for (const [col, label, sub, color] of eastPlats) {
-      const bx = padX + (col + 0.5) * cw;
+      const bx = X(col + 0.5);
       ctx.fillStyle = color;
-      ctx.fillRect(padX + col * cw, padY + 14 * ch, cw - 0.5, 3);
-      ctx.fillRect(padX + col * cw, padY + 19 * ch, cw - 0.5, 3);
+      ctx.fillRect(X(col), Y(16), cw - 0.5, 3);
+      ctx.fillRect(X(col), Y(21), cw - 0.5, 3);
       ctx.fillStyle = '#f2f7f4';
       ctx.font = 'bold 9.5px monospace';
-      ctx.fillText(label, bx, padY + 14.95 * ch);
+      ctx.fillText(label, bx, Y(17.6));
       ctx.fillStyle = '#9db8b2';
       ctx.font = '600 7px sans-serif';
-      ctx.fillText(sub, bx, padY + 15.65 * ch);
+      ctx.fillText(sub, bx, Y(18.35));
       ctx.fillStyle = '#d4e6e2';
       ctx.font = 'bold 8px monospace';
-      ctx.fillText(label, bx, padY + 19.8 * ch);
+      ctx.fillText(label, bx, Y(21.8));
     }
 
-    // 5·6番線 成田エクスプレス (N'EX) Underground Passage
+    // 5·6番線 成田エクスプレス (N'EX)
     ctx.fillStyle = '#e03a3e';
-    ctx.fillRect(padX + 22 * cw, padY + 21.85 * ch, 3 * cw - 0.5, 2.5);
+    ctx.fillRect(X(27), Y(23.85), 3 * cw - 0.5, 2.5);
     ctx.fillStyle = '#ff9aa0';
     ctx.font = 'bold 8.5px monospace';
-    ctx.fillText("5·6 N'EX", padX + 23.5 * cw, padY + 21.65 * ch);
+    ctx.fillText("5·6 N'EX", X(28.5), Y(23.55));
 
-    // 6. Authentic Shinjuku B1F Wing & Gate Labels (carefully positioned for zero overlap)
+    // 8. Authentic Shinjuku Megacomplex Wing & Gate Labels (zero-overlap layout)
     ctx.textAlign = 'center';
+
+    // Far North-West: 都営大江戸線 新宿西口駅 E01
+    ctx.fillStyle = '#ff7ac8';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText('大江戸線 新宿西口 E01', X(5.6), Y(0.8));
+    ctx.fillStyle = '#e0a8cc';
+    ctx.font = '600 7.5px sans-serif';
+    ctx.fillText('E01コンコース', X(3.9), Y(3.9));
 
     // North: Tokyo Metro Marunouchi Line M08
     ctx.fillStyle = '#ff8a8a';
     ctx.font = 'bold 9.5px sans-serif';
-    ctx.fillText('丸ノ内線 西改札 M08', padX + 11.0 * cw, padY + 0.8 * ch);
-    ctx.fillText('丸ノ内線 東改札 M08', padX + 23.0 * cw, padY + 0.8 * ch);
+    ctx.fillText('丸ノ内線 西改札 M08', X(16.0), Y(2.6));
+    ctx.fillText('丸ノ内線 東改札 M08', X(28.0), Y(2.6));
     ctx.fillStyle = '#d4c4cf';
-    ctx.font = '600 9.5px sans-serif';
-    ctx.fillText('← 東京メトロ メトロプロムナード (132m) →', padX + 18.0 * cw, padY + 3.25 * ch);
+    ctx.font = '600 9px sans-serif';
+    ctx.fillText('← 北大動脈・メトロプロムナード →', X(25.5), Y(5.55));
 
-    // West: West Plaza, Odakyu OH01, Keio KO01
+    // Far North-East: 新宿サブナード
+    ctx.fillStyle = '#f2c46a';
+    ctx.font = 'bold 8.5px sans-serif';
+    ctx.fillText('サブナード北口', X(41.5), Y(0.8));
+    ctx.fillStyle = '#e8d6a8';
+    ctx.font = '600 7.5px sans-serif';
+    ctx.fillText('サンデッキ広場', X(41.5), Y(5.55));
+    ctx.fillStyle = '#f2c46a';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText('新宿', X(41.5), Y(12.75));
+    ctx.fillText('サブナード', X(41.5), Y(13.75));
+    ctx.fillStyle = '#9cc890';
+    ctx.font = '600 7px sans-serif';
+    ctx.fillText('アーバン', X(41.5), Y(16.85));
+    ctx.fillText('ジャングル', X(41.5), Y(17.65));
+
+    // Far West: 新宿の目 + 動く歩道 + 西新宿連絡
+    ctx.fillStyle = '#f2d27a';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText('新宿の目', X(3.5), Y(7.6));
+    ctx.fillStyle = '#c4d8e8';
+    ctx.font = '600 7.5px sans-serif';
+    ctx.fillText('動く歩道(都庁方面)', X(3.85), Y(9.65));
+    ctx.fillStyle = '#9fb4c8';
+    ctx.font = '600 7.5px sans-serif';
+    ctx.fillText('西新宿', X(3.0), Y(16.2));
+    ctx.fillText('連絡道', X(3.0), Y(17.1));
+
+    // West Plaza, Odakyu OH01, Keio KO01
     ctx.fillStyle = '#b4d6f4';
     ctx.font = 'bold 9.5px sans-serif';
-    ctx.fillText('西口地下広場', padX + 3.5 * cw, padY + 7.9 * ch);
+    ctx.fillText('西口地下広場', X(8.5), Y(8.75));
     ctx.fillStyle = '#8cb6dc';
     ctx.font = '600 7.5px sans-serif';
-    ctx.fillText('ロータリー吹抜', padX + 3.5 * cw, padY + 8.85 * ch);
+    ctx.fillText('ロータリー吹抜', X(8.5), Y(9.55));
 
     ctx.fillStyle = '#6db8ff';
     ctx.font = 'bold 9px sans-serif';
-    ctx.fillText('小田急', padX + 2.38 * cw, padY + 14.35 * ch);
+    ctx.fillText('小田急', X(8.55), Y(16.05));
     ctx.fillStyle = '#7ec0ff';
     ctx.font = '600 7.5px monospace';
-    ctx.fillText('OH01', padX + 2.38 * cw, padY + 15.2 * ch);
+    ctx.fillText('OH01', X(8.55), Y(16.85));
 
     ctx.fillStyle = '#ff78c4';
     ctx.font = 'bold 8.5px sans-serif';
-    ctx.fillText('京王西口 KO01', padX + 3.5 * cw, padY + 21.1 * ch);
+    ctx.fillText('京王西口 KO01', X(10.5), Y(23.75));
+
+    // Far South-West: 京王モール + 都営新宿線 S01 / 大江戸線 E27
+    ctx.fillStyle = '#e8a8d8';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText('京王モール', X(8.6), Y(25.45));
+    ctx.fillStyle = '#b48aa8';
+    ctx.font = '600 7px monospace';
+    ctx.fillText('KEIO MALL', X(8.6), Y(26.35));
+    ctx.fillStyle = '#8ee07a';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillText('都営新宿線 S01·大江戸線 E27', X(7.4), Y(27.75));
 
     // Core North: Shinjuku Wall 456 & East-West Free Passage & Alps Plaza
     ctx.fillStyle = '#7ce6fc';
     ctx.font = 'bold 9.5px sans-serif';
-    ctx.fillText('━━ 新宿ウォール456 (45.6m) ━━', padX + 14.7 * cw, padY + 5.55 * ch);
+    ctx.fillText('━━ 新宿ウォール456 (45.6m) ━━', X(19.7), Y(7.55));
     ctx.fillStyle = '#e8f2f8';
-    ctx.font = 'bold 10.5px sans-serif';
-    ctx.fillText('東西自由通路 (J・ADビジョン柱列)', padX + 14.8 * cw, padY + 7.45 * ch);
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillText('東西自由通路 (J・ADビジョン柱列)', X(21.0), Y(9.5));
     ctx.fillStyle = '#c2dce8';
     ctx.font = 'bold 9px sans-serif';
-    ctx.fillText('アルプス広場', padX + 26.2 * cw, padY + 7.45 * ch);
+    ctx.fillText('アルプス広場', X(31.2), Y(9.5));
 
     // East Exit (Kabukicho)
     ctx.fillStyle = exitReady ? '#6af6aa' : '#ff8c92';
     ctx.font = 'bold 9px sans-serif';
-    ctx.fillText('東口', padX + 33.8 * cw, padY + 7.1 * ch);
+    ctx.fillText('東口', X(38.0), Y(9.1));
     ctx.font = '600 7.5px sans-serif';
-    ctx.fillText(exitReady ? '解錠' : '出口', padX + 33.8 * cw, padY + 7.95 * ch);
+    ctx.fillText(exitReady ? '解錠' : '出口', X(38.0), Y(9.95));
 
-    // JR Row 10 Gates & Facilities
+    // JR Row 12 Gates & Facilities
     ctx.fillStyle = '#8ef4b8';
     ctx.font = 'bold 9px sans-serif';
-    ctx.fillText('西改札', padX + 8.5 * cw, padY + 10.75 * ch);
+    ctx.fillText('西改札', X(13.5), Y(12.88));
     ctx.fillStyle = '#a4e8d0';
     ctx.font = '600 8px sans-serif';
-    ctx.fillText('きっぷ', padX + 11.5 * cw, padY + 10.75 * ch);
+    ctx.fillText('きっぷ', X(17.75), Y(12.88));
     ctx.fillStyle = '#90f8be';
     ctx.font = 'bold 8.5px sans-serif';
-    ctx.fillText('みどり', padX + 14.5 * cw, padY + 10.75 * ch);
+    ctx.fillText('みどり', X(19.65), Y(12.88));
     ctx.fillStyle = '#8ef4b8';
     ctx.font = 'bold 9px sans-serif';
-    ctx.fillText('東改札', padX + 20.5 * cw, padY + 10.75 * ch);
+    ctx.fillText('東改札', X(25.5), Y(12.88));
     ctx.fillStyle = '#d6b4ea';
     ctx.font = 'bold 8.5px sans-serif';
-    ctx.fillText('ルミネエスト B1F', padX + 26.5 * cw, padY + 10.75 * ch);
+    ctx.fillText('ルミネエスト B1F', X(31.5), Y(12.92));
 
-    // Central Passage & South
+    // Central Passage
     ctx.fillStyle = '#8ef4b8';
     ctx.font = 'bold 8.5px sans-serif';
-    ctx.fillText('中央西', padX + 6.5 * cw, padY + 17.45 * ch);
+    ctx.fillText('中央西', X(11.5), Y(19.45));
     ctx.fillStyle = '#cad8df';
     ctx.font = 'bold 9.5px sans-serif';
-    ctx.fillText('←  JR中央通路 (1〜16番線連絡)  →', padX + 17.5 * cw, padY + 17.45 * ch);
+    ctx.fillText('←  JR中央通路 (1〜16番線連絡)  →', X(22.5), Y(19.45));
     ctx.fillStyle = '#8ef4b8';
     ctx.font = 'bold 8.5px sans-serif';
-    ctx.fillText('中央東', padX + 30.5 * cw, padY + 17.45 * ch);
+    ctx.fillText('中央東', X(35.5), Y(19.45));
 
-    ctx.fillStyle = '#96a4ae';
+    // Far South: JR南口・バスタ新宿・新南改札
+    ctx.fillStyle = '#a8c4d8';
     ctx.font = '600 7.5px sans-serif';
-    ctx.fillText('南口・バスタ(封鎖)', padX + 16.5 * cw, padY + 20.6 * ch);
+    ctx.fillText('南口連絡', X(21.5), Y(22.6));
+    ctx.fillStyle = '#d4e4f0';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText('JR南口・甲州街道・バスタ新宿 大コンコース', X(27.0), Y(25.45));
+    ctx.fillStyle = '#8ef4b8';
+    ctx.font = 'bold 8.5px sans-serif';
+    ctx.fillText('新南改札 (QR) → バスタ新宿4F', X(22.0), Y(28.6));
+    ctx.fillStyle = '#c8b4e0';
+    ctx.font = '600 7px sans-serif';
+    ctx.fillText('東南口', X(37.0), Y(23.75));
 
-    // 7. Compass Badge Top-Right
+    // 9. Compass Badge (top-left, clear of all wing labels)
     ctx.fillStyle = 'rgba(16, 26, 34, 0.92)';
-    ctx.fillRect(w - 38, 6, 28, 22);
+    ctx.fillRect(4, 4, 28, 22);
     ctx.strokeStyle = 'rgba(128, 195, 66, 0.55)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(w - 38, 6, 28, 22);
+    ctx.strokeRect(4, 4, 28, 22);
     ctx.fillStyle = '#80c342';
     ctx.font = 'bold 10.5px monospace';
-    ctx.fillText('N↑', w - 24, 21);
+    ctx.fillText('N↑', 18, 19);
 
-    // 8. Hiding Spots (Phone Booths & Suica Lockers)
+    // 10. Hiding Spots (Phone Booths & Suica Lockers)
     for (const hSpot of HIDING_SPOTS) {
       const hx = padX + (hSpot.x / CELL) * cw;
       const hy = padY + (hSpot.z / CELL) * ch;
@@ -560,7 +701,7 @@ export class HUD {
       ctx.strokeRect(hx - 3, hy - 3, 6, 6);
     }
 
-    // 9. 5 Suica Charge Terminals (きっぷ・チャージ)
+    // 11. 5 Suica Charge Terminals
     const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.006);
     for (const t of terminals) {
       const mx = padX + (t.def.x / CELL) * cw;
@@ -581,7 +722,7 @@ export class HUD {
       ctx.stroke();
     }
 
-    // 10. Player Marker + Heading Cone
+    // 12. Player Marker + Heading Cone
     const ux = padX + (px / CELL) * cw;
     const uy = padY + (pz / CELL) * ch;
     ctx.save();
@@ -616,7 +757,7 @@ export class HUD {
     const s = Math.floor(stats.elapsedSec % 60);
     const timeStr = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     const html = `
-      <div class="stat-row"><span>舞台</span><strong>新宿駅 B1F 全域（東口脱出）</strong></div>
+      <div class="stat-row"><span>舞台</span><strong>新宿駅 地下街全域 180m×116m（東口脱出）</strong></div>
       <div class="stat-row"><span>難易度</span><strong>${stats.difficulty === 'nightmare' ? '悪夢' : '通常'}</strong></div>
       <div class="stat-row"><span>経過時間</span><strong>${timeStr}</strong></div>
       <div class="stat-row"><span>Suicaチャージ</span><strong>${stats.charges} / 5（¥${stats.charges * 200}）</strong></div>

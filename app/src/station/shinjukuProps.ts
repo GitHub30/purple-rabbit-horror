@@ -142,14 +142,14 @@ export class ShinjukuPropLibrary {
       roughness: 0.22,
     });
 
-    this.drinkMats = [
-      new THREE.MeshStandardMaterial({ color: 0x248c3c, roughness: 0.28, metalness: 0.14 }), // 緑茶 お〜いお茶
-      new THREE.MeshStandardMaterial({ color: 0x2482c8, roughness: 0.22, metalness: 0.12 }), // From AQUA 天然水
-      new THREE.MeshStandardMaterial({ color: 0xcc2028, roughness: 0.24, metalness: 0.48 }), // コーラ
-      new THREE.MeshStandardMaterial({ color: 0xc89a2c, roughness: 0.26, metalness: 0.65 }), // BOSS コーヒー
-      new THREE.MeshStandardMaterial({ color: 0xe4741a, roughness: 0.26, metalness: 0.14 }), // オレンジ / りんご
-      new THREE.MeshStandardMaterial({ color: 0xdce4e8, roughness: 0.26, metalness: 0.2 }),  // カルピス / ミルクティー
-    ];
+    this.drinkMats = [0, 1, 2, 3, 4, 5].map(
+      (idx) =>
+        new THREE.MeshStandardMaterial({
+          map: textures.drinkLabels[idx],
+          roughness: idx === 2 || idx === 3 ? 0.24 : 0.28,
+          metalness: idx === 2 || idx === 3 ? 0.56 : 0.14,
+        })
+    );
     this.capMats = [
       new THREE.MeshStandardMaterial({ color: 0x16642a, roughness: 0.42 }),
       new THREE.MeshStandardMaterial({ color: 0x186ab0, roughness: 0.42 }),
@@ -172,7 +172,7 @@ export class ShinjukuPropLibrary {
     });
   }
 
-  // 1. Authentic JR East EG20 / EG21 (or Marunouchi/Odakyu/Keio) Automatic Ticket Gate Unit
+  // 1. Authentic JR East EG20 / EG21 QR-Enabled Automatic Ticket Gate Unit (Shinjuku New-Gen Spec!)
   buildEG20Turnstile(
     x: number,
     z: number,
@@ -190,15 +190,24 @@ export class ShinjukuPropLibrary {
       roughness: 0.34,
       metalness: 0.16,
     });
+    const laneLedMat = new THREE.MeshBasicMaterial({ color: 0x34e898 });
+    const qrGlowMat = new THREE.MeshStandardMaterial({
+      color: 0x202a30,
+      emissive: new THREE.Color(0x56c8f2),
+      emissiveIntensity: 0.72,
+      roughness: 0.22,
+    });
 
-    // Recessed floor plinth + brushed stainless lower cabinet
+    // Brushed floor cable conduit strip + recessed kickplate + stainless cabinet body
+    const floorPlate = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.012, 1.54), this.darkSteelMat);
+    floorPlate.position.y = 0.006;
     const kick = new THREE.Mesh(this.tsKickGeo, this.matteBlackMat);
     kick.position.y = 0.04;
     const body = new THREE.Mesh(this.tsBodyGeo, this.steelMat);
     body.position.y = 0.48;
     body.castShadow = true;
     body.receiveShadow = true;
-    u.add(kick, body);
+    u.add(floorPlate, kick, body);
 
     // Side recessed infrared passenger-tracking optical sensor strips & photocell lenses!
     for (const sx of [-0.122, 0.122]) {
@@ -211,6 +220,10 @@ export class ShinjukuPropLibrary {
         dot.position.set(sx + (sx > 0 ? 0.005 : -0.005), 0.54, sz);
         u.add(dot);
       }
+      // Subtle lower side stripe trim
+      const sideTrim = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.036, 1.28), accentMat);
+      sideTrim.position.set(sx + (sx > 0 ? 0.003 : -0.003), 0.22, 0);
+      u.add(sideTrim);
     }
 
     // Sloped black polycarbonate top deck + front/rear angled reading hoods
@@ -223,6 +236,18 @@ export class ShinjukuPropLibrary {
       const cap = new THREE.Mesh(this.tsEndCapGeo, accentMat);
       cap.position.set(0, 0.46, dir * 0.7);
       u.add(cap);
+
+      // Vertical brushed-chrome corner bumpers + vertical lane-status LED strips (authentic EG20/21!)
+      for (const cx of [-0.128, 0.128]) {
+        const bumper = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.82, 0.022), this.chromeMat);
+        bumper.position.set(cx, 0.46, dir * 0.758);
+        u.add(bumper);
+        if (showFrontArrows) {
+          const ledStrip = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.34, 0.012), laneLedMat);
+          ledStrip.position.set(cx * 0.88, 0.66, dir * 0.766);
+          u.add(ledStrip);
+        }
+      }
 
       // Sloped upper nose cowl
       const hood = new THREE.Mesh(this.tsHoodGeo, this.matteBlackMat);
@@ -256,6 +281,15 @@ export class ShinjukuPropLibrary {
       padFace.rotation.x = -Math.PI / 2 + dir * 0.22;
       if (dir < 0) padFace.rotation.z = Math.PI;
       u.add(padBezel, padFace);
+
+      // Authentic Shinjuku New-Gen EG21 Angled Recessed QR-Code Optical Scanner Window!
+      const qrFrame = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.024, 0.11), this.darkSteelMat);
+      qrFrame.position.set(0.055, 0.935, dir * 0.59);
+      qrFrame.rotation.x = dir * 0.24;
+      const qrLens = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.028, 0.075), qrGlowMat);
+      qrLens.position.set(0.055, 0.938, dir * 0.59);
+      qrLens.rotation.x = dir * 0.24;
+      u.add(qrFrame, qrLens);
 
       // Tilted residual-balance mini LCD display window behind IC pad
       const lcd = new THREE.Mesh(this.tsLcdGeo, this.gateMiniLcdMat);
@@ -359,31 +393,54 @@ export class ShinjukuPropLibrary {
         ug.add(btn);
       }
 
-      // Protruding slanted brushed-steel operating console deck + IC tray + coin cup + bill slot
+      // Protruding slanted brushed-steel operating console deck + IC tray + acrylic lip + keypad + coin/bill hoods
       const deck = new THREE.Mesh(deckGeo, isMV50 ? this.darkSteelMat : silverShell);
       deck.position.set(0, 1.02, 0.26);
       deck.rotation.x = 0.22;
 
       const icTray = new THREE.Mesh(trayGeo, this.matteBlackMat);
-      icTray.position.set(-0.24, 1.08, 0.27);
+      icTray.position.set(-0.26, 1.08, 0.27);
       icTray.rotation.x = 0.22;
       const icFace = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.11), this.suicaPadMat);
-      icFace.position.set(-0.24, 1.1, 0.272);
+      icFace.position.set(-0.26, 1.1, 0.272);
       icFace.rotation.x = -Math.PI / 2 + 0.22;
+      const icLip = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.018, 0.014), this.clearGlassMat);
+      icLip.position.set(-0.26, 1.09, 0.34);
+
+      // 3x4 Embossed metallic PIN/numeric keypad + green OK / red Cancel buttons
+      const kpPad = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.018, 0.12), this.darkSteelMat);
+      kpPad.position.set(-0.02, 1.08, 0.27);
+      kpPad.rotation.x = 0.22;
+      ug.add(kpPad);
+      for (let kr = 0; kr < 4; kr++) {
+        for (let kc = 0; kc < 3; kc++) {
+          const kBtn = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.01, 0.018), this.chromeMat);
+          kBtn.position.set(-0.052 + kc * 0.032, 1.092 - kr * 0.005, 0.232 + kr * 0.024);
+          kBtn.rotation.x = 0.22;
+          ug.add(kBtn);
+        }
+      }
 
       const coinCup = new THREE.Mesh(cupGeo, this.matteBlackMat);
-      coinCup.position.set(0.04, 1.08, 0.27);
+      coinCup.position.set(0.16, 1.08, 0.27);
       coinCup.rotation.x = 0.22;
+      const coinFunnel = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.018, 0.024, 10), this.chromeMat);
+      coinFunnel.position.set(0.16, 1.102, 0.25);
       const billSlot = new THREE.Mesh(cupGeo, this.matteBlackMat);
-      billSlot.position.set(0.28, 1.08, 0.27);
+      billSlot.position.set(0.32, 1.08, 0.27);
       billSlot.rotation.x = 0.22;
       const billLed = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.012, 0.012), greenLedMat);
-      billLed.position.set(0.28, 1.106, 0.24);
+      billLed.position.set(0.32, 1.106, 0.24);
+      // Overhead green 『空 / 利用可』 status indicator lamp on top canopy
+      const topStatusLamp = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.036, 0.036), greenLedMat);
+      topStatusLamp.position.set(0, 2.12, 0.16);
 
       const lower = new THREE.Mesh(lowerGeo, lowerDeckMat);
       lower.position.set(0, 0.56, 0.184);
       const cavity = new THREE.Mesh(cavityGeo, this.matteBlackMat);
       cavity.position.set(0, 0.42, 0.16);
+      const receiptSlit = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.024, 0.03), this.chromeMat);
+      receiptSlit.position.set(0.26, 0.72, 0.19);
 
       // Authentic 『話せる指定席券売機』 operator handset + camera bezel on unit 0!
       if (i === 0) {
@@ -394,7 +451,10 @@ export class ShinjukuPropLibrary {
         ug.add(assistPod, handset);
       }
 
-      ug.add(body, head, headFace, bezel, scr, deck, icTray, icFace, coinCup, billSlot, billLed, lower, cavity);
+      ug.add(
+        body, head, headFace, bezel, scr, deck, icTray, icFace, icLip,
+        coinCup, coinFunnel, billSlot, billLed, topStatusLamp, lower, cavity, receiptSlit
+      );
       bank.add(ug);
     }
     return bank;
@@ -412,6 +472,7 @@ export class ShinjukuPropLibrary {
       metalness: 0.32,
     });
     const scrMat = this.makeBacklitMat(this.textures.fareAdjustScreen, 0.62);
+    const statusGreenMat = new THREE.MeshBasicMaterial({ color: 0x38d888 });
 
     const surround = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.26, 0.16), this.darkSteelMat);
     surround.position.set(0, 1.13, -0.02);
@@ -428,6 +489,8 @@ export class ShinjukuPropLibrary {
       canopy.position.set(0, 1.84, 0.03);
       const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.12, 0.03), yellowBodyMat);
       stripe.position.set(0, 1.84, 0.24);
+      const statusLamp = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.032, 0.032), statusGreenMat);
+      statusLamp.position.set(0, 2.02, 0.15);
 
       const bezel = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.48, 0.04), this.matteBlackMat);
       bezel.position.set(0, 1.32, 0.18);
@@ -442,10 +505,17 @@ export class ShinjukuPropLibrary {
       const icFace = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.12), this.suicaPadMat);
       icFace.position.set(-0.24, 1.05, 0.27);
       icFace.rotation.x = -Math.PI / 2 + 0.2;
+      const coinFunnel = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.018, 0.024, 10), this.chromeMat);
+      coinFunnel.position.set(0.08, 1.06, 0.25);
+      const billHood = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.04, 0.12), this.matteBlackMat);
+      billHood.position.set(0.28, 1.05, 0.26);
+      billHood.rotation.x = 0.2;
       const chute = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.18, 0.08), this.matteBlackMat);
       chute.position.set(0, 0.44, 0.16);
+      const chuteLip = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.02, 0.035), this.chromeMat);
+      chuteLip.position.set(0, 0.35, 0.195);
 
-      ug.add(body, canopy, stripe, bezel, scr, deck, icFace, chute);
+      ug.add(body, canopy, stripe, statusLamp, bezel, scr, deck, icFace, coinFunnel, billHood, chute, chuteLip);
       bank.add(ug);
     }
     return bank;
@@ -469,6 +539,7 @@ export class ShinjukuPropLibrary {
     const coldStripMat = new THREE.MeshBasicMaterial({ color: 0x2ca8f0 });
     const hotStripMat = new THREE.MeshBasicMaterial({ color: 0xe83828 });
     const btnGlowMat = new THREE.MeshBasicMaterial({ color: 0xc2e6f4 });
+    const ledDigitRedMat = new THREE.MeshBasicMaterial({ color: 0xf43628 });
 
     // Local +X is the front face (matching original addAcurePair orientation!)
     const buildSingleAcure = (zOffset: number, seed: number) => {
@@ -499,21 +570,23 @@ export class ShinjukuPropLibrary {
       chamber.position.set(0.18, 1.28, 0);
       chamber.rotation.y = Math.PI / 2;
 
-      // 3 Horizontal drink shelves populated with ACTUAL 3D MINIATURE CANS & PET BOTTLES!
+      // 3 Horizontal drink shelves populated with ACTUAL 3D LABELED MINIATURE CANS & PET BOTTLES!
       const shelfYs = [1.54, 1.26, 0.98];
       shelfYs.forEach((sy, rowIdx) => {
         const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 1.06), this.steelMat);
         shelf.position.set(0.28, sy - 0.06, 0);
         m.add(shelf);
 
-        // Cold (blue) / Hot (red) temperature rail + select buttons
+        // Cold (blue) / Hot (red) temperature rail + metallic price tag strip + select buttons
         const isHot = rowIdx === 2;
         const rail = new THREE.Mesh(
           new THREE.BoxGeometry(0.02, 0.028, 1.04),
           isHot ? hotStripMat : coldStripMat
         );
         rail.position.set(0.375, sy - 0.072, 0);
-        m.add(rail);
+        const priceRail = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.018, 1.04), this.chromeMat);
+        priceRail.position.set(0.376, sy - 0.048, 0);
+        m.add(rail, priceRail);
 
         for (let col = 0; col < 7; col++) {
           const dz = -0.44 + col * 0.146;
@@ -522,6 +595,7 @@ export class ShinjukuPropLibrary {
           if (isPet) {
             const pb = new THREE.Mesh(this.petBodyGeo, this.drinkMats[drinkIdx]);
             pb.position.set(0.29, sy + 0.02, dz);
+            pb.rotation.y = -Math.PI * 0.5;
             const pn = new THREE.Mesh(this.petNeckGeo, this.drinkMats[drinkIdx]);
             pn.position.set(0.29, sy + 0.11, dz);
             const pc = new THREE.Mesh(this.petCapGeo, this.capMats[drinkIdx]);
@@ -530,6 +604,7 @@ export class ShinjukuPropLibrary {
           } else {
             const cb = new THREE.Mesh(this.canBodyGeo, this.drinkMats[drinkIdx]);
             cb.position.set(0.29, sy + 0.008, dz);
+            cb.rotation.y = -Math.PI * 0.5;
             const ct = new THREE.Mesh(this.canTopGeo, this.chromeMat);
             ct.position.set(0.29, sy + 0.068, dz);
             m.add(cb, ct);
@@ -546,7 +621,7 @@ export class ShinjukuPropLibrary {
       glass.position.set(0.392, 1.28, 0);
       glass.rotation.y = Math.PI / 2;
 
-      // Brushed-steel middle payment bar (VM-30 Suica reader + coin slot + bill acceptor + return lever)
+      // Brushed-steel middle payment bar (VM-30 Suica reader + 7-segment LED + coin slot + return lever + bill acceptor)
       const midBar = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.34, 1.08), this.darkSteelMat);
       midBar.position.set(0.28, 0.66, 0);
       const vmPod = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.18), this.matteBlackMat);
@@ -556,20 +631,33 @@ export class ShinjukuPropLibrary {
       vmSuica.rotation.y = Math.PI / 2;
       const billBox = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.12), this.steelMat);
       billBox.position.set(0.405, 0.68, -0.02);
+      // Red 7-segment digital price readout window + vertical coin slot + chrome return lever!
+      const ledWindow = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.045, 0.1), this.matteBlackMat);
+      ledWindow.position.set(0.408, 0.74, -0.24);
+      const ledDigits = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.018, 0.064), ledDigitRedMat);
+      ledDigits.position.set(0.412, 0.74, -0.24);
+      const coinSlot = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.024, 10), this.chromeMat);
+      coinSlot.rotation.z = Math.PI / 2;
+      coinSlot.position.set(0.41, 0.68, -0.22);
+      const returnLever = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.042, 0.016), this.chromeMat);
+      returnLever.position.set(0.412, 0.68, -0.28);
       const coinCup = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.09, 0.1), this.matteBlackMat);
-      coinCup.position.set(0.405, 0.6, -0.24);
+      coinCup.position.set(0.405, 0.58, -0.24);
 
-      // Deeply recessed lower drink pickup bin with translucent dark push-flap
+      // Deeply recessed lower drink pickup bin with translucent dark push-flap & sculpted handle bar!
       const lowerWall = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.42, 1.08), whiteBodyMat);
       lowerWall.position.set(0.28, 0.28, 0);
       const pickupHole = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.72), this.matteBlackMat);
       pickupHole.position.set(0.37, 0.28, 0);
       const pickupFlap = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.19, 0.68), this.smokedGlassMat);
       pickupFlap.position.set(0.395, 0.28, 0);
+      const flapHandle = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.024, 0.34), this.chromeMat);
+      flapHandle.position.set(0.408, 0.22, 0);
 
       m.add(
         base, back, sideL, sideR, canopy, canopyFace, chamber, glass,
-        midBar, vmPod, vmSuica, billBox, coinCup, lowerWall, pickupHole, pickupFlap
+        midBar, vmPod, vmSuica, billBox, ledWindow, ledDigits, coinSlot, returnLever,
+        coinCup, lowerWall, pickupHole, pickupFlap, flapHandle
       );
       return m;
     };
@@ -725,9 +813,11 @@ export class ShinjukuPropLibrary {
       g.add(lowerKick, glass, transom, stripe);
     }
 
-    // Backlit 『電話 TELEPHONE』 green roof marquee + interior ceiling fluorescent tube!
+    // Backlit 『電話 TELEPHONE』 green roof marquee + interior ceiling fluorescent diffuser + vent grille!
     const roof = new THREE.Mesh(new THREE.BoxGeometry(1.14, 0.26, 1.08), nttGreen);
     roof.position.set(0, 2.38, 0);
+    const roofVent = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.04, 0.42), this.darkSteelMat);
+    roofVent.position.set(0, 2.52, -0.1);
     const signMat = this.makeBacklitMat(this.textures.signPayphone, 0.72, 0xa8f8c4);
     const signFront = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 0.21), signMat);
     signFront.position.set(0, 2.38, 0.545);
@@ -737,13 +827,26 @@ export class ShinjukuPropLibrary {
     const signRight = new THREE.Mesh(new THREE.PlaneGeometry(0.92, 0.21), signMat);
     signRight.position.set(0.575, 2.38, 0);
     signRight.rotation.y = Math.PI / 2;
+    const innerDiffuser = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.045, 0.14), this.clearGlassMat);
+    innerDiffuser.position.set(0, 2.22, -0.05);
     const innerTube = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.02, 0.02, 0.62, 8),
+      new THREE.CylinderGeometry(0.018, 0.018, 0.62, 8),
       new THREE.MeshBasicMaterial({ color: 0xd8f4e2 })
     );
     innerTube.rotation.z = Math.PI / 2;
     innerTube.position.set(0, 2.22, -0.05);
-    g.add(roof, signFront, signLeft, signRight, innerTube);
+    // Interior emergency 110 / 119 red-header instruction plaque mounted on back wall
+    const plaque = new THREE.Mesh(
+      new THREE.BoxGeometry(0.28, 0.36, 0.014),
+      new THREE.MeshStandardMaterial({ color: 0xe6e4dc, roughness: 0.55 })
+    );
+    plaque.position.set(0.26, 1.44, -0.445);
+    const plaqueTop = new THREE.Mesh(
+      new THREE.BoxGeometry(0.28, 0.07, 0.016),
+      new THREE.MeshStandardMaterial({ color: 0xc82026, roughness: 0.42 })
+    );
+    plaqueTop.position.set(0.26, 1.585, -0.444);
+    g.add(roof, roofVent, signFront, signLeft, signRight, innerDiffuser, innerTube, plaque, plaqueTop);
 
     // Interior brushed stainless writing shelf + yellow phone directory
     const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.94, 0.035, 0.32), this.steelMat);
@@ -765,7 +868,14 @@ export class ShinjukuPropLibrary {
     pSlope.rotation.x = -0.24;
     const pFace = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.35), phoneFaceMat);
     pFace.position.set(0, 0, 0.098);
-    phoneG.add(pBody, pSlope, pFace);
+    // Authentic embossed 10円/100円 coin funnel, telecard slot bezel, and yellow coin-return flap!
+    const pCoinFunnel = new THREE.Mesh(new THREE.BoxGeometry(0.058, 0.032, 0.036), this.chromeMat);
+    pCoinFunnel.position.set(0.072, 0.16, 0.105);
+    const pCardSlot = new THREE.Mesh(new THREE.BoxGeometry(0.072, 0.018, 0.024), this.matteBlackMat);
+    pCardSlot.position.set(0.068, 0.068, 0.102);
+    const pReturnFlap = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.048, 0.022), this.ticketYellowMat);
+    pReturnFlap.position.set(0.068, -0.125, 0.102);
+    phoneG.add(pBody, pSlope, pFace, pCoinFunnel, pCardSlot, pReturnFlap);
 
     // 3×4 Raised metallic push-button keypad + red 緊急通報 button!
     const keyGeo = new THREE.BoxGeometry(0.022, 0.022, 0.014);
@@ -934,7 +1044,13 @@ export class ShinjukuPropLibrary {
     const cabinet = new THREE.Mesh(new THREE.BoxGeometry(0.54, 2.1, 1.94), bodyMat);
     cabinet.position.y = 1.05;
     cabinet.castShadow = true;
-    bank.add(cabinet);
+    // Sloped anti-dust top cornice + overhead protruding yellow 『Suica ロッカー』 banner sign!
+    const cornice = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.12, 1.96), bodyMat);
+    cornice.position.set(0.01, 2.15, 0);
+    cornice.rotation.z = -0.18;
+    const overheadBanner = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.24, 1.72), yellowTrimMat);
+    overheadBanner.position.set(-0.27, 2.28, 0);
+    bank.add(cabinet, cornice, overheadBanner);
 
     // 4 Columns along Z: col 0, 1, 3 are 3D beveled locker doors; col 2 is the Central Suica Touch Terminal!
     const colZs = [-0.7, -0.24, 0.24, 0.7];
@@ -971,12 +1087,18 @@ export class ShinjukuPropLibrary {
           door.position.set(-0.276, ryCenter, cz);
           const handle = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.11, 0.024), this.chromeMat);
           handle.position.set(-0.3, ryCenter, cz + 0.14);
+          // Stamped metallic locker number plate + cylinder keyhole!
+          const numBadge = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.038, 0.078), this.steelMat);
+          numBadge.position.set(-0.296, ryCenter + rh * 0.28, cz + 0.02);
+          const keyhole = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.018, 8), this.chromeMat);
+          keyhole.rotation.z = Math.PI / 2;
+          keyhole.position.set(-0.298, ryCenter + 0.06, cz + 0.14);
           const led = new THREE.Mesh(
             new THREE.BoxGeometry(0.015, 0.022, 0.04),
             (ci + ri) % 3 === 0 ? ledUsedMat : ledFreeMat
           );
           led.position.set(-0.296, ryCenter + rh * 0.34, cz - 0.12);
-          bank.add(door, handle, led);
+          bank.add(door, handle, numBadge, keyhole, led);
         });
       }
     });
@@ -1643,6 +1765,520 @@ export class ShinjukuPropLibrary {
       g.rotation.z = Math.PI / 2 - 0.12;
       g.position.y = 0.18;
     }
+    return g;
+  }
+
+  // 20. Iconic 1969 『新宿の目』(Eye of Shinjuku — Yoshiko Miyashita, 10.0m × 3.4m Sculpted Illuminated Acrylic Art!)
+  buildEyeOfShinjuku3D(
+    x: number,
+    y: number,
+    z: number
+  ): { group: THREE.Group; pupilGroup: THREE.Group; irisMat: THREE.MeshStandardMaterial } {
+    const g = new THREE.Group();
+    g.position.set(x, y, z);
+
+    const stoneFrameMat = new THREE.MeshStandardMaterial({
+      color: 0x302e2c,
+      roughness: 0.62,
+      metalness: 0.24,
+    });
+    const acrylicRibMat = new THREE.MeshStandardMaterial({
+      color: 0xd8cfc0,
+      emissive: new THREE.Color(0xc4a878),
+      emissiveIntensity: 0.48,
+      roughness: 0.34,
+      metalness: 0.08,
+    });
+    const innerCavityMat = new THREE.MeshStandardMaterial({
+      color: 0x26201a,
+      emissive: new THREE.Color(0x52402a),
+      emissiveIntensity: 0.38,
+      roughness: 0.65,
+    });
+    const irisMat = new THREE.MeshStandardMaterial({
+      color: 0xb8aa94,
+      map: this.textures.eyeOfShinjukuIris,
+      emissive: new THREE.Color(0xf4dec0),
+      emissiveMap: this.textures.eyeOfShinjukuIris,
+      emissiveIntensity: 0.68,
+      roughness: 0.28,
+      metalness: 0.12,
+    });
+
+    // Recessed architectural dark-granite surround frame (exact 10.0m wide × 3.4m tall!)
+    const frameBack = new THREE.Mesh(new THREE.BoxGeometry(10.1, 3.42, 0.16), stoneFrameMat);
+    frameBack.position.z = 0.04;
+    const recessGlow = new THREE.Mesh(new THREE.PlaneGeometry(9.6, 3.0), innerCavityMat);
+    recessGlow.position.z = 0.13;
+    const topLintel = new THREE.Mesh(new THREE.BoxGeometry(10.24, 0.18, 0.36), stoneFrameMat);
+    topLintel.position.set(0, 1.72, 0.14);
+    const botSill = new THREE.Mesh(new THREE.BoxGeometry(10.24, 0.18, 0.36), stoneFrameMat);
+    botSill.position.set(0, -1.72, 0.14);
+    g.add(frameBack, recessGlow, topLintel, botSill);
+
+    // 14 Sculpted concentric almond-curved translucent acrylic eyelid ribs (upper & lower swept arcs!)
+    const ribCurves: Array<{ sign: number; height: number; width: number; depth: number; r: number }> = [
+      { sign: 1, height: 1.48, width: 4.7, depth: 0.28, r: 0.055 },
+      { sign: 1, height: 1.24, width: 4.5, depth: 0.25, r: 0.048 },
+      { sign: 1, height: 1.0, width: 4.2, depth: 0.22, r: 0.042 },
+      { sign: 1, height: 0.78, width: 3.8, depth: 0.2, r: 0.036 },
+      { sign: -1, height: 1.48, width: 4.7, depth: 0.28, r: 0.055 },
+      { sign: -1, height: 1.24, width: 4.5, depth: 0.25, r: 0.048 },
+      { sign: -1, height: 1.0, width: 4.2, depth: 0.22, r: 0.042 },
+      { sign: -1, height: 0.78, width: 3.8, depth: 0.2, r: 0.036 },
+    ];
+    for (const rc of ribCurves) {
+      const pts: THREE.Vector3[] = [];
+      for (let i = 0; i <= 16; i++) {
+        const t = i / 16;
+        const u = t * 2 - 1; // -1 .. +1
+        const px = u * rc.width;
+        const arch = Math.pow(Math.max(0, 1 - u * u), 0.72);
+        const py = rc.sign * arch * rc.height;
+        const pz = 0.14 + arch * rc.depth;
+        pts.push(new THREE.Vector3(px, py, pz));
+      }
+      const curve = new THREE.CatmullRomCurve3(pts);
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, rc.r, 7, false), acrylicRibMat);
+      g.add(tube);
+    }
+
+    // Translucent frosted white acrylic almond sclera backing shells on left & right of iris
+    const scleraShape = new THREE.Shape();
+    scleraShape.moveTo(-4.45, 0);
+    scleraShape.quadraticCurveTo(0, 1.82, 4.45, 0);
+    scleraShape.quadraticCurveTo(0, -1.82, -4.45, 0);
+    const scleraMat = new THREE.MeshStandardMaterial({
+      color: 0xd0c6b4,
+      emissive: new THREE.Color(0x9e8864),
+      emissiveIntensity: 0.44,
+      roughness: 0.36,
+      metalness: 0.06,
+    });
+    const scleraMesh = new THREE.Mesh(new THREE.ShapeGeometry(scleraShape, 24), scleraMat);
+    scleraMesh.position.z = 0.15;
+    g.add(scleraMesh);
+
+    // Sculpted vertical light-diffuser fins across sclera corners (authentic 1969 Miyashita faceted look!)
+    for (const sx of [-3.6, -2.9, -2.2, 2.2, 2.9, 3.6]) {
+      const hFrac = Math.sqrt(Math.max(0.05, 1 - (sx / 4.5) * (sx / 4.5)));
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.15 * hFrac, 0.14), acrylicRibMat);
+      fin.position.set(sx, 0, 0.21);
+      g.add(fin);
+    }
+
+    // Independently articulated rotating illuminated acrylic iris & obsidian pupil orb!
+    const pupilGroup = new THREE.Group();
+    pupilGroup.position.set(0, 0, 0.26);
+
+    const outerIrisRing = new THREE.Mesh(new THREE.TorusGeometry(1.12, 0.065, 10, 32), this.darkSteelMat);
+    const irisDome = new THREE.Mesh(new THREE.CircleGeometry(1.08, 32), irisMat);
+    irisDome.position.z = 0.04;
+    const pupilCore = new THREE.Mesh(
+      new THREE.SphereGeometry(0.42, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.5),
+      new THREE.MeshPhysicalMaterial({
+        color: 0x060406,
+        roughness: 0.06,
+        metalness: 0.25,
+        clearcoat: 1.0,
+      })
+    );
+    pupilCore.rotation.x = Math.PI / 2;
+    pupilCore.position.z = 0.05;
+    const innerCornerOrb = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 12), acrylicRibMat);
+    innerCornerOrb.position.set(-3.45, 0, 0.24);
+    g.add(innerCornerOrb);
+
+    pupilGroup.add(outerIrisRing, irisDome, pupilCore);
+    g.add(pupilGroup);
+
+    // Subtle brushed bronze museum plaque beneath 『新宿の目 1969 宮下芳子』
+    const plaque = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.22, 0.03), this.brassMat);
+    plaque.position.set(4.1, -1.55, 0.22);
+    g.add(plaque);
+
+    return { group: g, pupilGroup, irisMat };
+  }
+
+  // 21. Dual Parallel 『西新宿・都庁方面 動く歩道』 (Moving Walkways with Grooved Belts, Glass Balustrades & Comb Plates!)
+  buildMovingWalkway3D(
+    xStart: number,
+    xEnd: number,
+    zCenter: number,
+    halfWidth: number
+  ): { group: THREE.Group; beltTexWest: THREE.CanvasTexture; beltTexEast: THREE.CanvasTexture } {
+    const g = new THREE.Group();
+    const len = xEnd - xStart;
+    const midX = (xStart + xEnd) * 0.5;
+    g.position.set(midX, 0, zCenter);
+
+    // Clone belt texture so westbound & eastbound lanes scroll smoothly in opposite directions!
+    const beltTexWest = this.textures.movingWalkwayBelt;
+    const beltTexEast = this.textures.movingWalkwayBelt.clone();
+    beltTexEast.needsUpdate = true;
+
+    const makeBeltMat = (tex: THREE.CanvasTexture) =>
+      new THREE.MeshStandardMaterial({
+        map: tex,
+        normalMap: this.textures.movingWalkwayBeltNormal,
+        normalScale: new THREE.Vector2(0.85, 0.85),
+        roughness: 0.42,
+        metalness: 0.72,
+      });
+
+    const yellowSafetyMat = new THREE.MeshStandardMaterial({ color: 0xe2b216, roughness: 0.46 });
+    const greenArrowMat = new THREE.MeshBasicMaterial({ color: 0x36e68a });
+    const redStopMat = new THREE.MeshBasicMaterial({ color: 0xe6282e });
+
+    const laneWidth = halfWidth - 0.16;
+    const beltLen = len - 1.3;
+
+    // 2 Parallel Moving Belts (North lane = Westbound toward 都庁, South lane = Eastbound toward 新宿駅)
+    const lanes: Array<{ zOff: number; mat: THREE.MeshStandardMaterial; goWest: boolean }> = [
+      { zOff: -halfWidth * 0.5, mat: makeBeltMat(beltTexWest), goWest: true },
+      { zOff: halfWidth * 0.5, mat: makeBeltMat(beltTexEast), goWest: false },
+    ];
+    for (const lane of lanes) {
+      const belt = new THREE.Mesh(new THREE.BoxGeometry(beltLen, 0.04, laneWidth), lane.mat);
+      belt.position.set(0, 0.025, lane.zOff);
+      belt.receiveShadow = true;
+      g.add(belt);
+
+      // Grooved stainless comb landing plates (`コムプレート`) + yellow safety strips at BOTH ends!
+      for (const endDir of [-1, 1]) {
+        const combPlate = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.044, laneWidth + 0.08), this.steelMat);
+        combPlate.position.set(endDir * (len * 0.5 - 0.34), 0.024, lane.zOff);
+        const yellowComb = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.048, laneWidth), yellowSafetyMat);
+        yellowComb.position.set(endDir * (beltLen * 0.5 + 0.05), 0.026, lane.zOff);
+        g.add(combPlate, yellowComb);
+      }
+    }
+
+    // 3 Continuous Tempered-Glass Balustrades (North outer, Center divider, South outer)
+    // with Brushed Stainless Decking, Black Moving Rubber Handrails, Curved Inlet Boots & Red Emergency Stop!
+    for (const bz of [-halfWidth, 0, halfWidth]) {
+      const skirt = new THREE.Mesh(new THREE.BoxGeometry(len - 0.2, 0.24, 0.14), this.steelMat);
+      skirt.position.set(0, 0.12, bz);
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(len - 0.7, 0.72, 0.026), this.clearGlassMat);
+      glass.position.set(0, 0.58, bz);
+      const handrail = new THREE.Mesh(new THREE.BoxGeometry(len - 0.3, 0.058, 0.09), this.matteBlackMat);
+      handrail.position.set(0, 0.96, bz);
+      g.add(skirt, glass, handrail);
+
+      // Rounded newel ends + black rubber handrail return curves + yellow inlet guard + red emergency stop button!
+      for (const endDir of [-1, 1]) {
+        const endX = endDir * (len * 0.5 - 0.18);
+        const newel = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.072, 0.94, 12), this.steelMat);
+        newel.position.set(endX, 0.47, bz);
+        // Curved black rubber handrail wrap around newel nose
+        const wrap = new THREE.Mesh(
+          new THREE.TorusGeometry(0.24, 0.036, 8, 12, Math.PI),
+          this.matteBlackMat
+        );
+        wrap.rotation.z = endDir > 0 ? -Math.PI / 2 : Math.PI / 2;
+        wrap.position.set(endX - endDir * 0.08, 0.72, bz);
+        // Yellow brush safety inlet boot (`入り込み口`)
+        const inletBoot = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.11), yellowSafetyMat);
+        inletBoot.position.set(endX - endDir * 0.02, 0.48, bz);
+        // Red emergency stop push-button (`非常停止ボタン`) inside protective collar
+        const stopCollar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.08), this.chromeMat);
+        stopCollar.position.set(endX + endDir * 0.04, 0.68, bz);
+        const stopBtn = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.03, 10), redStopMat);
+        stopBtn.rotation.z = Math.PI / 2;
+        stopBtn.position.set(endX + endDir * 0.068, 0.68, bz);
+        // Glowing directional entry arrow indicator on inner newel face (Green GO / Red NO ENTRY!)
+        const isGo = (bz <= 0 && endDir > 0) || (bz >= 0 && endDir < 0);
+        const indicator = new THREE.Mesh(
+          new THREE.BoxGeometry(0.02, 0.075, 0.075),
+          isGo ? greenArrowMat : redStopMat
+        );
+        indicator.position.set(endX + endDir * 0.07, 0.84, bz);
+        g.add(newel, wrap, inletBoot, stopCollar, stopBtn, indicator);
+      }
+    }
+
+    return { group: g, beltTexWest, beltTexEast };
+  }
+
+  // 22. Authentic JR East Wall-Mounted 『AED 自動体外式除細動器』 Emergency Cabinet + Protruding Corridor Flag!
+  buildAEDCabinet3D(x: number, z: number, ry: number): THREE.Group {
+    const g = new THREE.Group();
+    g.position.set(x, 1.38, z);
+    g.rotation.y = ry;
+
+    const aedRedMat = new THREE.MeshStandardMaterial({ color: 0xc81c24, roughness: 0.34, metalness: 0.28 });
+    const aedWhiteMat = new THREE.MeshStandardMaterial({ color: 0xe6e8e4, roughness: 0.38, metalness: 0.2 });
+    const aedUnitOrange = new THREE.MeshStandardMaterial({ color: 0xe86414, roughness: 0.36 });
+    const faceMat = this.makeBacklitMat(this.textures.aedCabinetFace, 0.46);
+    const readyLedMat = new THREE.MeshBasicMaterial({ color: 0x38f084 });
+
+    // Outer white/red steel wall box (0.44m W × 0.56m H × 0.18m D)
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.56, 0.18), aedWhiteMat);
+    box.position.z = 0.09;
+    const redHood = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.1, 0.2), aedRedMat);
+    redHood.position.set(0, 0.24, 0.095);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.54), faceMat);
+    face.position.z = 0.184;
+
+    // Clear inspection window recess showing the actual 3D orange-and-white AED defibrillator inside!
+    const recess = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.24, 0.05), this.matteBlackMat);
+    recess.position.set(0, 0.04, 0.165);
+    const aedDevice = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 0.06), aedUnitOrange);
+    aedDevice.position.set(0, 0.03, 0.16);
+    const aedHandle = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.025, 0.03), this.matteBlackMat);
+    aedHandle.position.set(0, 0.13, 0.17);
+    const statusLed = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), readyLedMat);
+    statusLed.position.set(0.08, 0.09, 0.195);
+    const windowGlass = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.24), this.clearGlassMat);
+    windowGlass.position.set(0, 0.04, 0.196);
+    const doorHandle = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.11, 0.03), this.chromeMat);
+    doorHandle.position.set(0.185, 0.02, 0.195);
+
+    // Protruding double-sided red 『AED』 wayfinding blade sign above cabinet!
+    const flagArm = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, 0.34), this.steelMat);
+    flagArm.position.set(0, 0.56, 0.17);
+    const flagBlade = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.24, 0.32), aedRedMat);
+    flagBlade.position.set(0, 0.52, 0.28);
+
+    g.add(box, redHood, face, recess, aedDevice, aedHandle, statusLed, windowGlass, doorHandle, flagArm, flagBlade);
+    return g;
+  }
+
+  // 23. Authentic JR East Barrier-Free Stainless & Glass Station Elevator Portal (`エレベーター Elevator`)
+  buildJRElevator3D(x: number, z: number, ry: number): THREE.Group {
+    const g = new THREE.Group();
+    g.position.set(x, 0, z);
+    g.rotation.y = ry;
+
+    const headerMat = this.makeBacklitMat(this.textures.elevatorHeader, 0.62);
+    const floorLedAmber = new THREE.MeshBasicMaterial({ color: 0xf4a828 });
+    const callGlowMat = new THREE.MeshBasicMaterial({ color: 0x52e098 });
+
+    // Brushed dark-steel surround portal (2.5m W × 3.2m H)
+    const surroundTop = new THREE.Mesh(new THREE.BoxGeometry(2.54, 0.72, 0.24), this.darkSteelMat);
+    surroundTop.position.set(0, 2.74, 0.08);
+    const headerFace = new THREE.Mesh(new THREE.PlaneGeometry(2.38, 0.58), headerMat);
+    headerFace.position.set(0, 2.74, 0.205);
+    for (const sx of [-1.08, 1.08]) {
+      const jamb = new THREE.Mesh(new THREE.BoxGeometry(0.38, 2.4, 0.22), this.darkSteelMat);
+      jamb.position.set(sx, 1.2, 0.07);
+      g.add(jamb);
+    }
+
+    // Dual brushed-stainless sliding elevator doors with vertical smoked glass inspection vision panels!
+    for (const dx of [-0.44, 0.44]) {
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.86, 2.28, 0.08), this.steelMat);
+      door.position.set(dx, 1.14, 0.03);
+      const slitBack = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.32, 0.09), this.matteBlackMat);
+      slitBack.position.set(dx, 1.32, 0.032);
+      const slitGlass = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 1.28), this.smokedGlassMat);
+      slitGlass.position.set(dx, 1.32, 0.08);
+      g.add(door, slitBack, slitGlass);
+    }
+    const doorSeam = new THREE.Mesh(new THREE.BoxGeometry(0.014, 2.28, 0.09), this.matteBlackMat);
+    doorSeam.position.set(0, 1.14, 0.035);
+    const sill = new THREE.Mesh(new THREE.BoxGeometry(1.82, 0.025, 0.24), this.chromeMat);
+    sill.position.set(0, 0.012, 0.08);
+
+    // Digital amber B1F floor indicator above doors
+    const floorBox = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.14, 0.06), this.matteBlackMat);
+    floorBox.position.set(0, 2.34, 0.19);
+    const floorDigit = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.055, 0.015), floorLedAmber);
+    floorDigit.position.set(0, 2.34, 0.222);
+
+    // Right jamb stainless call-button panel with glowing UP/DOWN buttons & wheelchair lower button!
+    const callPlate = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.34, 0.03), this.steelMat);
+    callPlate.position.set(1.08, 1.12, 0.185);
+    for (const by of [1.18, 1.06]) {
+      const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.02, 10), callGlowMat);
+      btn.rotation.x = Math.PI / 2;
+      btn.position.set(1.08, by, 0.205);
+      g.add(btn);
+    }
+
+    g.add(surroundTop, headerFace, doorSeam, sill, floorBox, floorDigit, callPlate);
+    return g;
+  }
+
+  // 24. Populated 『みどりの窓口』 MARS Ticketing Counter Interior (3 Stations, Monitors, Partitions & Queue Stanchions!)
+  buildMidoriInterior3D(centerX: number, centerZ: number): THREE.Group {
+    const g = new THREE.Group();
+    g.position.set(centerX, 0, centerZ);
+
+    const screenMat = new THREE.MeshStandardMaterial({
+      color: 0x48b89a,
+      emissive: new THREE.Color(0x1e8868),
+      emissiveIntensity: 0.62,
+      roughness: 0.36,
+    });
+    const jrGreenBadgeMat = new THREE.MeshStandardMaterial({
+      color: 0x10763c,
+      emissive: new THREE.Color(0x145830),
+      emissiveIntensity: 0.56,
+      roughness: 0.42,
+    });
+    const brochureMat = new THREE.MeshStandardMaterial({ color: 0xe2dfd4, roughness: 0.72 });
+
+    // 3 JR East MARS Ticketing Counter Workstations (`1番 / 2番 / 3番窓口`)
+    for (let i = 0; i < 3; i++) {
+      const lx = -2.6 + i * 2.6;
+      // Overhead counter number box
+      const numBox = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.28, 0.1), jrGreenBadgeMat);
+      numBox.position.set(lx, 2.22, -0.15);
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.65, 6), this.darkSteelMat);
+      rod.position.set(lx, 2.68, -0.15);
+
+      // MARS dual monitor + magnetic ticket printer + customer acrylic partition!
+      const monStand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.14), this.darkSteelMat);
+      monStand.position.set(lx - 0.32, 1.12, 0.04);
+      const monBox = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.3, 0.06), this.darkSteelMat);
+      monBox.position.set(lx - 0.32, 1.28, 0.04);
+      const monFace = new THREE.Mesh(new THREE.PlaneGeometry(0.38, 0.25), screenMat);
+      monFace.position.set(lx - 0.32, 1.28, 0.006);
+      monFace.rotation.y = Math.PI;
+
+      const marsPrinter = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.22, 0.42), this.steelMat);
+      marsPrinter.position.set(lx + 0.32, 1.16, 0.06);
+      const sneezeGlass = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.68, 0.025), this.clearGlassMat);
+      sneezeGlass.position.set(lx, 1.4, -0.34);
+
+      // Stacked timetable brochure leaflets beside each window
+      const leaflets = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.16), brochureMat);
+      leaflets.position.set(lx + 0.85, 1.12, -0.22);
+
+      g.add(numBox, rod, monStand, monBox, monFace, marsPrinter, sneezeGlass, leaflets);
+    }
+
+    // Waiting queue stainless belt stanchions inside Midori-no-Madoguchi
+    for (const sx of [-2.4, 0, 2.4]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.88, 8), this.chromeMat);
+      post.position.set(sx, 0.44, -1.22);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.14, 0.03, 10), this.darkSteelMat);
+      base.position.set(sx, 0.015, -1.22);
+      g.add(post, base);
+    }
+    const belt = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.048, 0.014), this.velvetRedMat);
+    belt.position.set(0, 0.82, -1.22);
+    g.add(belt);
+
+    return g;
+  }
+
+  // 25. Recessed Shuttered Underground Mall Shopfront (`新宿サブナード` or `京王モール` Arcade Boutiques!)
+  buildUndergroundShopArcade3D(
+    x: number,
+    z: number,
+    ry: number,
+    width: number,
+    isSubnade: boolean
+  ): THREE.Group {
+    const g = new THREE.Group();
+    g.position.set(x, 0, z);
+    g.rotation.y = ry;
+
+    const shutterTex = isSubnade ? this.textures.subnadeShopShutter : this.textures.keioMallShopShutter;
+    const faceMat = new THREE.MeshStandardMaterial({
+      map: shutterTex,
+      emissive: new THREE.Color(isSubnade ? 0xa4c89e : 0xc6b4c8),
+      emissiveMap: shutterTex,
+      emissiveIntensity: 0.24,
+      roughness: 0.5,
+      metalness: 0.44,
+    });
+    const trimMat = new THREE.MeshStandardMaterial({
+      color: isSubnade ? 0x264430 : 0x3c223c,
+      roughness: 0.42,
+      metalness: 0.24,
+    });
+
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(width - 0.24, 2.68), faceMat);
+    panel.position.set(0, 1.34, 0.03);
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(width + 0.08, 0.22, 0.26), trimMat);
+    canopy.position.set(0, 2.78, 0.11);
+    const kickBar = new THREE.Mesh(new THREE.BoxGeometry(width - 0.2, 0.08, 0.08), this.darkSteelMat);
+    kickBar.position.set(0, 0.04, 0.04);
+    for (const px of [-width * 0.5 + 0.06, width * 0.5 - 0.06]) {
+      const pilaster = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.86, 0.2), this.steelMat);
+      pilaster.position.set(px, 1.43, 0.08);
+      g.add(pilaster);
+    }
+    g.add(panel, canopy, kickBar);
+    return g;
+  }
+
+  // 26. Freestanding JR East Shinjuku Multilingual Digital Touch Guidance Kiosk Totem (`新宿駅 構内案内`)
+  buildDigitalKioskStand3D(x: number, z: number, ry: number): THREE.Group {
+    const g = new THREE.Group();
+    g.position.set(x, 0, z);
+    g.rotation.y = ry;
+
+    const scrMat = this.makeBacklitMat(this.textures.digitalKioskScreen, 0.62);
+    const jrGreenRim = new THREE.MeshBasicMaterial({ color: 0x38c86e });
+
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.08, 0.56), this.darkSteelMat);
+    base.position.y = 0.04;
+    const baseLed = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.016, 0.58), jrGreenRim);
+    baseLed.position.y = 0.085;
+    const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.68, 1.78, 0.18), this.darkSteelMat);
+    chassis.position.y = 0.98;
+    chassis.castShadow = true;
+    const sideTrimL = new THREE.Mesh(new THREE.BoxGeometry(0.03, 1.78, 0.2), this.steelMat);
+    sideTrimL.position.set(-0.34, 0.98, 0);
+    const sideTrimR = new THREE.Mesh(new THREE.BoxGeometry(0.03, 1.78, 0.2), this.steelMat);
+    sideTrimR.position.set(0.34, 0.98, 0);
+
+    // Dual-sided crisp backlit touchscreen display
+    const f1 = new THREE.Mesh(new THREE.PlaneGeometry(0.58, 1.24), scrMat);
+    f1.position.set(0, 1.12, 0.095);
+    const f2 = new THREE.Mesh(new THREE.PlaneGeometry(0.58, 1.24), scrMat);
+    f2.position.set(0, 1.12, -0.095);
+    f2.rotation.y = Math.PI;
+
+    // Angled side brochure pocket with maps
+    const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.26, 0.16), this.clearGlassMat);
+    pocket.position.set(0.39, 0.94, 0);
+
+    g.add(base, baseLed, chassis, sideTrimL, sideTrimR, f1, f2, pocket);
+    return g;
+  }
+
+  // 27. 50th Anniversary Shinjuku Subnade "Urban Jungle" Oak-Wood Lounge Bench + Integrated Planter!
+  buildSubnadeLoungeBench3D(x: number, z: number, ry = 0): THREE.Group {
+    const g = new THREE.Group();
+    g.position.set(x, 0, z);
+    g.rotation.y = ry;
+
+    const oakMat = new THREE.MeshStandardMaterial({ color: 0x866240, roughness: 0.54, metalness: 0.06 });
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x2c3034, roughness: 0.62, metalness: 0.18 });
+    const leafMat = new THREE.MeshStandardMaterial({
+      color: 0x285c34,
+      roughness: 0.58,
+      side: THREE.DoubleSide,
+    });
+
+    const basePlinth = new THREE.Mesh(new THREE.BoxGeometry(2.56, 0.34, 0.78), stoneMat);
+    basePlinth.position.y = 0.17;
+    basePlinth.castShadow = true;
+    const seatDeck = new THREE.Mesh(new THREE.BoxGeometry(1.92, 0.075, 0.84), oakMat);
+    seatDeck.position.set(-0.34, 0.38, 0);
+    seatDeck.castShadow = true;
+    const backRest = new THREE.Mesh(new THREE.BoxGeometry(1.92, 0.36, 0.08), oakMat);
+    backRest.position.set(-0.34, 0.58, -0.34);
+    backRest.rotation.x = -0.14;
+
+    // Integrated Urban Jungle planter box on bench end with sculpted botanical foliage fronds!
+    const planter = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.58, 0.82), stoneMat);
+    planter.position.set(0.96, 0.29, 0);
+    g.add(basePlinth, seatDeck, backRest, planter);
+
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const frond = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.56, 4), leafMat);
+      frond.position.set(0.96 + Math.cos(a) * 0.14, 0.78 + (i % 3) * 0.06, Math.sin(a) * 0.14);
+      frond.rotation.set(Math.sin(a) * 0.45, a, -Math.cos(a) * 0.45);
+      g.add(frond);
+    }
+
     return g;
   }
 }

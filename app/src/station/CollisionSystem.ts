@@ -1,11 +1,18 @@
 import {
   CELL,
   COLS,
+  CORE_OX,
+  CORE_OZ,
   GATE_LINE_X,
   GATE_LINE_Z,
+  MIDORI_DESK_POS,
+  MOVING_WALKWAY_SPAN,
   PEDESTAL_POS,
   ROWS,
   SHINJUKU_GRID,
+  SOUTH_BENCH_POS,
+  SUBNADE_BENCH_POS,
+  WAIT_BENCH_POS,
   worldToCell,
 } from './shinjukuMap';
 
@@ -51,7 +58,7 @@ export class CollisionSystem {
             opaque: true,
           });
         } else if (cell === 3) {
-          // みどりの窓口 Ticket Office glass storefront (runs East-West along North face of R5, allows LOS!)
+          // みどりの窓口 Ticket Office glass storefront (transparent LOS!)
           this.colliders.push({
             minX: x0,
             maxX: x0 + CELL,
@@ -69,7 +76,7 @@ export class CollisionSystem {
             opaque: false,
           });
         } else if (cell === 5) {
-          // West Plaza / Metro Promenade / East Plaza Cylindrical Structural Column (D = 1.56m)
+          // West Plaza / Metro Promenade / Subnade / South Concourse Cylindrical Structural Column (D = 1.56m)
           const pad = (CELL - 1.56) * 0.5;
           this.colliders.push({
             minX: x0 + pad,
@@ -79,7 +86,7 @@ export class CollisionSystem {
             opaque: true,
           });
         } else if (cell === 6) {
-          // Tokyo Metro Marunouchi M08 / Odakyu OH01 / Keio KO01 Glass Gate Concourse Partition (transparent LOS!)
+          // Private Rail / Subway / JR Shinnan Glass Gate Concourse Partition (transparent LOS!)
           this.colliders.push({
             minX: x0,
             maxX: x0 + CELL,
@@ -100,11 +107,11 @@ export class CollisionSystem {
       opaque: false,
     });
 
-    // East Exit (歌舞伎町・アルタ方面 地上出口) side gate banks along x = GATE_LINE_X (R6..R8 -> z = 24m..36m)
+    // East Exit (歌舞伎町・アルタ方面 地上出口) side gate banks along x = GATE_LINE_X (R8..R10)
     this.colliders.push({
       minX: GATE_LINE_X - 0.68,
       maxX: GATE_LINE_X + 0.68,
-      minZ: 6.0 * CELL,
+      minZ: (6.0 + CORE_OZ) * CELL,
       maxZ: GATE_LINE_Z - 1.35,
       opaque: false,
     });
@@ -112,7 +119,7 @@ export class CollisionSystem {
       minX: GATE_LINE_X - 0.68,
       maxX: GATE_LINE_X + 0.68,
       minZ: GATE_LINE_Z + 1.35,
-      maxZ: 9.0 * CELL,
+      maxZ: (9.0 + CORE_OZ) * CELL,
       opaque: false,
     });
 
@@ -126,21 +133,52 @@ export class CollisionSystem {
       opaque: false,
     });
 
-    // Midori-no-Madoguchi interior counter desk (inside R11 behind glass at C13..15)
+    // West Shinjuku Moving Walkway glass balustrade outer & center divider rails (open at both comb ends!)
+    const mwX0 = MOVING_WALKWAY_SPAN.xStart + 0.45;
+    const mwX1 = MOVING_WALKWAY_SPAN.xEnd - 0.45;
+    for (const dz of [-MOVING_WALKWAY_SPAN.halfWidth, 0, MOVING_WALKWAY_SPAN.halfWidth]) {
+      this.colliders.push({
+        minX: mwX0,
+        maxX: mwX1,
+        minZ: MOVING_WALKWAY_SPAN.zCenter + dz - 0.08,
+        maxZ: MOVING_WALKWAY_SPAN.zCenter + dz + 0.08,
+        opaque: false,
+      });
+    }
+
+    // Midori-no-Madoguchi interior counter desk
     this.colliders.push({
-      minX: 15.2 * CELL - 1.2,
-      maxX: 15.2 * CELL + 1.2,
-      minZ: 11.2 * CELL - 0.45,
-      maxZ: 11.2 * CELL + 0.45,
+      minX: MIDORI_DESK_POS.x - 1.2,
+      maxX: MIDORI_DESK_POS.x + 1.2,
+      minZ: MIDORI_DESK_POS.z - 0.45,
+      maxZ: MIDORI_DESK_POS.z + 0.45,
       opaque: false,
     });
 
-    // Inside-gate waiting bench (between 13・14 and 11・12 stairs at R13)
+    // Inside-gate waiting bench (between 13・14 and 11・12 stairs)
     this.colliders.push({
-      minX: 12.6 * CELL - 1.4,
-      maxX: 12.6 * CELL + 1.4,
-      minZ: 13.5 * CELL - 0.35,
-      maxZ: 13.5 * CELL + 0.35,
+      minX: WAIT_BENCH_POS.x - 1.4,
+      maxX: WAIT_BENCH_POS.x + 1.4,
+      minZ: WAIT_BENCH_POS.z - 0.35,
+      maxZ: WAIT_BENCH_POS.z + 0.35,
+      opaque: false,
+    });
+
+    // Shinjuku Subnade Urban Jungle wood lounge bench
+    this.colliders.push({
+      minX: SUBNADE_BENCH_POS.x - 0.45,
+      maxX: SUBNADE_BENCH_POS.x + 0.45,
+      minZ: SUBNADE_BENCH_POS.z - 1.4,
+      maxZ: SUBNADE_BENCH_POS.z + 1.4,
+      opaque: false,
+    });
+
+    // JR South / Busta Shinjuku Concourse Kotobuki bench
+    this.colliders.push({
+      minX: SOUTH_BENCH_POS.x - 1.4,
+      maxX: SOUTH_BENCH_POS.x + 1.4,
+      minZ: SOUTH_BENCH_POS.z - 0.35,
+      maxZ: SOUTH_BENCH_POS.z + 0.35,
       opaque: false,
     });
   }
@@ -234,7 +272,7 @@ export function findGridPath(
         }
       }
     }
-    return { col: 15, row: 7 };
+    return { col: 15 + CORE_OX, row: 7 + CORE_OZ };
   };
 
   const sCell = clampWalkable(s);
@@ -272,7 +310,7 @@ export function findGridPath(
 
   let found: Node | null = null;
   let steps = 0;
-  while (open.length > 0 && steps++ < 1600) {
+  while (open.length > 0 && steps++ < 2800) {
     open.sort((a, b) => a.f - b.f);
     const cur = open.shift()!;
     if (cur.c === gCell.col && cur.r === gCell.row) {

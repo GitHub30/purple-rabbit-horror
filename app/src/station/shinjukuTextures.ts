@@ -172,6 +172,25 @@ export interface ShinjukuTextureSet {
   kiReiSidePanel: THREE.CanvasTexture;
   coin100Yen: THREE.CanvasTexture;
   loreNotePaper: THREE.CanvasTexture;
+  eyeOfShinjukuIris: THREE.CanvasTexture;
+  movingWalkwayBelt: THREE.CanvasTexture;
+  movingWalkwayBeltNormal: THREE.CanvasTexture;
+  oedoWestHeader: THREE.CanvasTexture;
+  toeiShinjukuOedoHeader: THREE.CanvasTexture;
+  subnadeHeader: THREE.CanvasTexture;
+  subnadeWoodCeiling: THREE.CanvasTexture;
+  subnadeShopShutter: THREE.CanvasTexture;
+  subnadeVisionScreen: THREE.CanvasTexture;
+  keioMallHeader: THREE.CanvasTexture;
+  keioMallShopShutter: THREE.CanvasTexture;
+  shinnanBustaHeader: THREE.CanvasTexture;
+  aedCabinetFace: THREE.CanvasTexture;
+  elevatorHeader: THREE.CanvasTexture;
+  digitalKioskScreen: THREE.CanvasTexture;
+  signSubnadeWay: THREE.CanvasTexture;
+  signKeioSouthWay: THREE.CanvasTexture;
+  signEyeWalkway: THREE.CanvasTexture;
+  drinkLabels: THREE.CanvasTexture[];
 }
 
 export function createShinjukuTextures(): ShinjukuTextureSet {
@@ -328,6 +347,43 @@ export function createShinjukuTextures(): ShinjukuTextureSet {
     kiReiSidePanel: buildKiReiSidePanel(),
     coin100Yen: buildCoin100Yen(),
     loreNotePaper: buildLoreNotePaper(),
+    eyeOfShinjukuIris: buildEyeOfShinjukuIris(),
+    movingWalkwayBelt: buildMovingWalkwayBelt().color,
+    movingWalkwayBeltNormal: buildMovingWalkwayBelt().normal,
+    oedoWestHeader: buildOedoWestHeader(),
+    toeiShinjukuOedoHeader: buildToeiShinjukuOedoHeader(),
+    subnadeHeader: buildSubnadeHeader(),
+    subnadeWoodCeiling: buildSubnadeWoodCeiling(),
+    subnadeShopShutter: buildSubnadeShopShutter(),
+    subnadeVisionScreen: buildSubnadeVisionScreen(),
+    keioMallHeader: buildKeioMallHeader(),
+    keioMallShopShutter: buildKeioMallShopShutter(),
+    shinnanBustaHeader: buildShinnanBustaHeader(),
+    aedCabinetFace: buildAEDCabinetFace(),
+    elevatorHeader: buildElevatorHeader(),
+    digitalKioskScreen: buildDigitalKioskScreen(),
+    signSubnadeWay: buildJRSign(
+      '新宿サブナード・西武新宿駅・新宿三丁目 →',
+      'SHINJUKU SUBNADE · Seibu-Shinjuku Sta. / Shinjuku 3-chome',
+      '#13221a',
+      '#edf6ef',
+      ['#2d9a54', '#c8a642', '#00a7db']
+    ),
+    signKeioSouthWay: buildJRSign(
+      '← 京王モール・都営新宿線(S01) / JR南口・バスタ新宿 →',
+      'KEIO MALL · Toei Shinjuku S01 · Oedo E27 / JR South & Busta Shinjuku',
+      '#141a22',
+      '#f2f6f8',
+      ['#6cbb5a', '#b6007a', '#0e6b38']
+    ),
+    signEyeWalkway: buildJRSign(
+      '← 西新宿・都庁方面（動く歩道）・新宿の目・大江戸線(E01)',
+      'West Shinjuku · Tokyo Met. Gov. (Moving Walkway) / Eye of Shinjuku',
+      '#f4f5f0',
+      '#14181c',
+      ['#b6007a', '#1668b8', '#e6a818']
+    ),
+    drinkLabels: [0, 1, 2, 3, 4, 5].map((i) => buildDrinkLabel(i)),
   };
 }
 
@@ -2440,25 +2496,55 @@ function buildShinjukuGuideBoard(): THREE.CanvasTexture {
     ctx.fillText(name, px, 336);
   }
 
-  // 4. South Artery: 中央通路 + 中央西改札 & 中央東改札 + 5・6番線 N'EX
+  // 4. South Artery: 中央通路 + 5・6番線 N'EX + 京王モール & JR南口/バスタ新宿・新南改札!
   ctx.fillStyle = '#253830';
-  ctx.fillRect(54, 410, 660, 74);
+  ctx.fillRect(108, 410, 536, 46);
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 17px sans-serif';
-  ctx.fillText('← 中央西改札 (小田急・京王)   中央通路・5・6番線 N\'EX   中央東改札 (ルミネ) →', 384, 454);
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText('← 中央西改札    JR中央通路・5・6番線 N\'EX    中央東改札 →', 376, 439);
 
-  // Outer West & East Passages
-  ctx.fillStyle = '#24303c';
-  ctx.fillRect(54, 196, 46, 214);
-  ctx.fillRect(648, 196, 66, 214);
+  // Far South: 京王モール・都営新宿線S01 / JR南口・バスタ新宿・新南改札
+  ctx.fillStyle = '#2e223a';
+  ctx.fillRect(16, 462, 240, 44);
+  ctx.fillStyle = '#a4e89a';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('京王モール・都営新宿S01/E27', 136, 489);
+
+  ctx.fillStyle = '#1c3448';
+  ctx.fillRect(262, 462, 410, 44);
+  ctx.fillStyle = '#9cd8ff';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('JR南口・甲州街道・バスタ新宿／新南改札 連絡大コンコース', 467, 489);
+
+  // Far West: 新宿の目・動く歩道・大江戸線E01
+  ctx.fillStyle = '#381c36';
+  ctx.fillRect(16, 82, 34, 374);
+  ctx.save();
+  ctx.translate(33, 270);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#f2a8dc';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('大江戸線E01・新宿の目・動く歩道(都庁方面)', 0, 4);
+  ctx.restore();
+
+  // Far East: 新宿サブナード (Urban Jungle Underground Mall)
+  ctx.fillStyle = '#183828';
+  ctx.fillRect(678, 82, 74, 424);
+  ctx.save();
+  ctx.translate(715, 294);
+  ctx.rotate(Math.PI / 2);
+  ctx.fillStyle = '#9cf4bc';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText('新宿サブナード (SUBNADE 地下街・西武新宿/三丁目)', 0, 5);
+  ctx.restore();
 
   // Legend at bottom
   ctx.fillStyle = '#4ae0d6';
-  ctx.beginPath(); ctx.arc(76, 530, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(46, 536, 8, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#e8ece6';
   ctx.textAlign = 'left';
-  ctx.font = 'bold 18px sans-serif';
-  ctx.fillText('Suicaチャージ機 (全5箇所で ¥1,000 チャージ → 東口非常シャッター解錠)', 98, 536);
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('Suicaチャージ機 (新宿地下全域 5箇所で¥1,000達成 → 東口非常シャッター解錠)', 66, 542);
 
   return toTex(c, 1, 1, true);
 }
@@ -3524,6 +3610,539 @@ function buildLoreNotePaper(): THREE.CanvasTexture {
   lines.forEach((txt, i) => {
     ctx.fillText(txt, 22, 62 + i * 36);
   });
+  return toTex(c, 1, 1, true);
+}
+
+// 13. Yoshiko Miyashita's 1969 『新宿の目』(Eye of Shinjuku) Illuminated Translucent Acrylic Iris
+function buildEyeOfShinjukuIris(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 512);
+  ctx.fillStyle = '#0e0c0a';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Warm retro-1969 backlit frosted acrylic sclera glow
+  const outer = ctx.createRadialGradient(256, 256, 36, 256, 256, 248);
+  outer.addColorStop(0.0, '#090707');
+  outer.addColorStop(0.24, '#181412');
+  outer.addColorStop(0.32, '#4c463e');
+  outer.addColorStop(0.46, '#b8a890');
+  outer.addColorStop(0.68, '#d8d0c0');
+  outer.addColorStop(0.88, '#968b7c');
+  outer.addColorStop(1.0, '#1c1816');
+  ctx.fillStyle = outer;
+  ctx.beginPath();
+  ctx.arc(256, 256, 246, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Concentric acrylic ring grooves & radial light refraction striations (authentic Miyashita 1969 ribs!)
+  for (let i = 0; i < 48; i++) {
+    const a = (i / 48) * Math.PI * 2;
+    ctx.strokeStyle = i % 2 === 0 ? 'rgba(255,244,224,0.22)' : 'rgba(24,18,14,0.34)';
+    ctx.lineWidth = i % 3 === 0 ? 4 : 2;
+    ctx.beginPath();
+    ctx.moveTo(256 + Math.cos(a) * 68, 256 + Math.sin(a) * 68);
+    ctx.lineTo(256 + Math.cos(a) * 238, 256 + Math.sin(a) * 238);
+    ctx.stroke();
+  }
+  for (const r of [92, 134, 178, 218]) {
+    ctx.strokeStyle = 'rgba(28, 24, 22, 0.55)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(256, 256, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Deep rotating obsidian pupil with subtle eerie crimson/amber specular highlight
+  ctx.fillStyle = '#070506';
+  ctx.beginPath();
+  ctx.arc(256, 256, 66, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#d4b888';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255, 242, 220, 0.72)';
+  ctx.beginPath();
+  ctx.ellipse(234, 232, 16, 10, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  return toTex(c, 1, 1, true);
+}
+
+// 14. Authentic Grooved Aluminum Moving Walkway Tread Belt (`西新宿・都庁方面 動く歩道`) with Yellow Safety Cleats!
+let cachedMovingBelt: { color: THREE.CanvasTexture; normal: THREE.CanvasTexture } | null = null;
+function buildMovingWalkwayBelt(): { color: THREE.CanvasTexture; normal: THREE.CanvasTexture } {
+  if (cachedMovingBelt) return cachedMovingBelt;
+  const [c, ctx] = makeCanvas(512, 256);
+  const [nC, nCtx] = makeCanvas(256, 128);
+
+  ctx.fillStyle = '#485058';
+  ctx.fillRect(0, 0, 512, 256);
+  nCtx.fillStyle = '#606060';
+  nCtx.fillRect(0, 0, 256, 128);
+
+  // Longitudinal ribbed aluminum cleat grooves running along travel axis (X)
+  for (let y = 0; y < 256; y += 8) {
+    ctx.fillStyle = y % 16 === 0 ? '#76808a' : '#2a3036';
+    ctx.fillRect(0, y, 512, 4);
+    nCtx.fillStyle = y % 16 === 0 ? '#dcdcdc' : '#242424';
+    nCtx.fillRect(0, y / 2, 256, 2);
+  }
+  // Articulated pallet transverse seam lines every 128px
+  for (let x = 0; x < 512; x += 128) {
+    ctx.fillStyle = '#181c20';
+    ctx.fillRect(x, 0, 5, 256);
+    ctx.fillStyle = '#8c96a0';
+    ctx.fillRect(x + 5, 0, 3, 256);
+    nCtx.fillStyle = '#141414';
+    nCtx.fillRect(x / 2, 0, 3, 128);
+  }
+  // Authentic Japanese yellow resin side demarcation safety stripes (top & bottom edges!)
+  ctx.fillStyle = '#dfb216';
+  ctx.fillRect(0, 0, 512, 18);
+  ctx.fillRect(0, 238, 512, 18);
+  ctx.fillStyle = '#202428';
+  ctx.fillRect(0, 18, 512, 3);
+  ctx.fillRect(0, 235, 512, 3);
+
+  cachedMovingBelt = {
+    color: toTex(c, 9, 1, true),
+    normal: heightToNormal(nC, 2.2, 9, 1),
+  };
+  return cachedMovingBelt;
+}
+
+// 15. Authentic Toei Oedo Line Shinjuku-Nishiguchi Station (E01) Gate Fascia
+function buildOedoWestHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 192);
+  ctx.fillStyle = '#151218';
+  ctx.fillRect(0, 0, 1024, 192);
+  ctx.fillStyle = '#b6007a';
+  ctx.fillRect(0, 0, 1024, 24);
+  ctx.fillRect(0, 168, 1024, 24);
+
+  // Authentic Toei Oedo ruby-magenta circle badge `E 01`
+  ctx.strokeStyle = '#d41692';
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.arc(88, 96, 48, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = '900 32px sans-serif';
+  ctx.fillText('E', 88, 86);
+  ctx.font = '900 28px monospace';
+  ctx.fillText('01', 88, 118);
+
+  ctx.textAlign = 'left';
+  ctx.font = '800 44px sans-serif';
+  ctx.fillText('都営大江戸線 新宿西口駅 改札', 164, 96);
+  ctx.fillStyle = '#e6b2d4';
+  ctx.font = '600 24px sans-serif';
+  ctx.fillText('Toei Oedo Line Shinjuku-nishiguchi Sta.  都庁前・六本木・光が丘方面', 164, 140);
+  return toTex(c, 1, 1, true);
+}
+
+// 16. Authentic Split-Line Toei Shinjuku Line (S01 Leaf-Green) + Keio New Line + Toei Oedo Line (E27 Ruby) Gate Fascia!
+function buildToeiShinjukuOedoHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 192);
+  ctx.fillStyle = '#141918';
+  ctx.fillRect(0, 0, 1024, 192);
+  ctx.fillStyle = '#6cbb5a';
+  ctx.fillRect(0, 0, 512, 22);
+  ctx.fillStyle = '#b6007a';
+  ctx.fillRect(512, 0, 512, 22);
+  ctx.fillStyle = '#cf006c';
+  ctx.fillRect(0, 172, 1024, 20);
+
+  // S01 Leaf-Green badge
+  ctx.strokeStyle = '#6cbb5a';
+  ctx.lineWidth = 9;
+  ctx.beginPath();
+  ctx.arc(76, 96, 44, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = '900 28px sans-serif';
+  ctx.fillText('S', 76, 86);
+  ctx.font = '900 26px monospace';
+  ctx.fillText('01', 76, 116);
+
+  // E27 Ruby-Magenta badge
+  ctx.strokeStyle = '#cf1a8e';
+  ctx.lineWidth = 9;
+  ctx.beginPath();
+  ctx.arc(182, 96, 44, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.font = '900 28px sans-serif';
+  ctx.fillText('E', 182, 86);
+  ctx.font = '900 26px monospace';
+  ctx.fillText('27', 182, 116);
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 40px sans-serif';
+  ctx.fillText('都営新宿線・京王新線・大江戸線 改札', 252, 92);
+  ctx.fillStyle = '#c8dcd0';
+  ctx.font = '600 23px sans-serif';
+  ctx.fillText('Toei Shinjuku Line / Keio New Line / Oedo Line  新線新宿駅', 252, 138);
+  return toTex(c, 1, 1, true);
+}
+
+// 17. Authentic 50th Anniversary Renewed 『新宿サブナード SHINJUKU SUBNADE』 Portal Header
+function buildSubnadeHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 192);
+  const grad = ctx.createLinearGradient(0, 0, 1024, 0);
+  grad.addColorStop(0, '#12261a');
+  grad.addColorStop(0.5, '#1b3826');
+  grad.addColorStop(1, '#12261a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1024, 192);
+  ctx.fillStyle = '#c6a44e';
+  ctx.fillRect(0, 0, 1024, 12);
+  ctx.fillRect(0, 180, 1024, 12);
+
+  // Leaf emblem
+  ctx.fillStyle = '#38b262';
+  ctx.beginPath();
+  ctx.ellipse(86, 96, 36, 20, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#84de8e';
+  ctx.beginPath();
+  ctx.ellipse(104, 106, 26, 14, 0.35, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#f2f6ee';
+  ctx.textAlign = 'left';
+  ctx.font = '800 46px sans-serif';
+  ctx.fillText('新宿サブナード   SHINJUKU SUBNADE', 162, 96);
+  ctx.fillStyle = '#d4c28a';
+  ctx.font = '600 22px sans-serif';
+  ctx.fillText('西武新宿駅・歌舞伎町・新宿三丁目 地下街  URBAN JUNGLE PROMENADE', 162, 142);
+  return toTex(c, 1, 1, true);
+}
+
+// 18. 50th Anniversary Shinjuku Subnade "Urban Jungle" Warm Oak Wood-Slat & Botanical Ceiling
+function buildSubnadeWoodCeiling(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 512);
+  ctx.fillStyle = '#1e1b17';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Alternating warm oak wood louver battens with dark shadow channels
+  for (let x = 0; x < 512; x += 24) {
+    ctx.fillStyle = (x / 24) % 2 === 0 ? '#76583a' : '#684c32';
+    ctx.fillRect(x + 2, 0, 16, 512);
+    ctx.fillStyle = 'rgba(220, 188, 142, 0.14)';
+    ctx.fillRect(x + 4, 0, 4, 512);
+  }
+  // Subtle botanical dark-green accent strips woven along ceiling runners
+  ctx.fillStyle = '#24482e';
+  ctx.fillRect(0, 224, 512, 64);
+  ctx.fillStyle = '#366840';
+  for (let x = 12; x < 512; x += 36) {
+    ctx.beginPath();
+    ctx.ellipse(x, 256, 14, 8, (x % 72 === 12 ? 0.4 : -0.4), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return toTex(c, 1, 1, true);
+}
+
+// 19. Shinjuku Subnade Shuttered Underground Boutique Storefront
+function buildSubnadeShopShutter(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 320);
+  ctx.fillStyle = '#1a201c';
+  ctx.fillRect(0, 0, 512, 320);
+
+  // Top illuminated tenant fascia bar
+  ctx.fillStyle = '#22382b';
+  ctx.fillRect(0, 0, 512, 68);
+  ctx.fillStyle = '#c8aa58';
+  ctx.fillRect(0, 66, 512, 4);
+  ctx.fillStyle = '#eef4ec';
+  ctx.textAlign = 'center';
+  ctx.font = '700 28px sans-serif';
+  ctx.fillText('SUBNADE B1F  ・  営業時間 10:30〜21:00', 256, 44);
+
+  // Corrugated steel midnight shutter slats
+  for (let y = 74; y < 312; y += 12) {
+    ctx.fillStyle = y % 24 === 2 ? '#545c62' : '#40484e';
+    ctx.fillRect(14, y, 484, 10);
+    ctx.fillStyle = '#242a2e';
+    ctx.fillRect(14, y + 10, 484, 2);
+  }
+  // Closed notice card taped to shutter
+  ctx.fillStyle = '#e8e4d8';
+  ctx.fillRect(202, 162, 108, 72);
+  ctx.fillStyle = '#183824';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.fillText('本日営業終了', 256, 192);
+  ctx.fillStyle = '#44484c';
+  ctx.font = '600 12px monospace';
+  ctx.fillText('CLOSED', 256, 216);
+
+  return toTex(c, 1, 1, true);
+}
+
+// 20. Shinjuku Subnade Digital Column Signage (`SUBNADE VISION`)
+function buildSubnadeVisionScreen(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 512);
+  const g = ctx.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0, '#123222');
+  g.addColorStop(0.5, '#1c4c34');
+  g.addColorStop(1, '#0e1e18');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 512);
+  ctx.strokeStyle = '#c8aa54';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(8, 8, 240, 496);
+
+  ctx.fillStyle = '#e4f6ea';
+  ctx.textAlign = 'center';
+  ctx.font = '900 28px sans-serif';
+  ctx.fillText('SUBNADE', 128, 72);
+  ctx.fillStyle = '#a4e8b8';
+  ctx.font = '700 18px sans-serif';
+  ctx.fillText('新宿サブナード 50th', 128, 104);
+
+  // Urban jungle botanical geometric arch graphic
+  ctx.strokeStyle = '#58c87e';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(128, 256, 74, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = '#c8aa54';
+  ctx.font = '800 22px sans-serif';
+  ctx.fillText('URBAN JUNGLE', 128, 248);
+  ctx.fillStyle = '#d8ece0';
+  ctx.font = '600 15px sans-serif';
+  ctx.fillText('西武新宿駅・歌舞伎町', 128, 282);
+  ctx.fillText('新宿三丁目・丸ノ内線', 128, 308);
+
+  ctx.fillStyle = '#182420';
+  ctx.fillRect(24, 392, 208, 82);
+  ctx.fillStyle = '#f2d684';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('営業時間終了 00:47', 128, 428);
+  ctx.fillStyle = '#a8beb4';
+  ctx.font = '600 13px monospace';
+  ctx.fillText('ALL SHOPS CLOSED', 128, 456);
+  return toTex(c, 1, 1, true);
+}
+
+// 21. Authentic 『京王モール KEIO MALL』 Underground Arcade Header
+function buildKeioMallHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 192);
+  ctx.fillStyle = '#1c1824';
+  ctx.fillRect(0, 0, 1024, 192);
+  ctx.fillStyle = '#c81068';
+  ctx.fillRect(0, 0, 1024, 18);
+  ctx.fillStyle = '#0e4c94';
+  ctx.fillRect(0, 174, 1024, 18);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = '900 48px sans-serif';
+  ctx.fillText('京王モール    KEIO MALL', 512, 98);
+  ctx.fillStyle = '#e8c4d8';
+  ctx.font = '600 23px sans-serif';
+  ctx.fillText('京王新線・都営新宿線(S01)・都営大江戸線(E27) / JR南口連絡地下街', 512, 144);
+  return toTex(c, 1, 1, true);
+}
+
+// 22. Authentic Shuttered Keio Mall Shop Storefront (`ドトール / ルノアール / サンドラッグ`)
+function buildKeioMallShopShutter(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 320);
+  ctx.fillStyle = '#1e1a22';
+  ctx.fillRect(0, 0, 512, 320);
+
+  // Split 2 authentic Keio Mall shop signboards side by side
+  ctx.fillStyle = '#c89e22';
+  ctx.fillRect(0, 0, 254, 66);
+  ctx.fillStyle = '#1a1612';
+  ctx.textAlign = 'center';
+  ctx.font = '900 24px sans-serif';
+  ctx.fillText('DOUTOR COFFEE', 127, 42);
+
+  ctx.fillStyle = '#18548c';
+  ctx.fillRect(258, 0, 254, 66);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 24px sans-serif';
+  ctx.fillText('サンドラッグ・京王モール', 385, 42);
+
+  // Corrugated steel shutter slats
+  for (let y = 72; y < 312; y += 12) {
+    ctx.fillStyle = y % 24 === 0 ? '#50565e' : '#3c4248';
+    ctx.fillRect(10, y, 236, 10);
+    ctx.fillRect(266, y, 236, 10);
+  }
+  return toTex(c, 1, 1, true);
+}
+
+// 23. Authentic 『JR新宿駅 新南改札 / バスタ新宿 4F直結 ・ NEWoMan』 Gate Fascia!
+function buildShinnanBustaHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 192);
+  ctx.fillStyle = '#14191e';
+  ctx.fillRect(0, 0, 1024, 192);
+  ctx.fillStyle = '#0f6a36';
+  ctx.fillRect(0, 0, 600, 24);
+  ctx.fillStyle = '#1870c4';
+  ctx.fillRect(600, 0, 424, 24);
+  ctx.fillStyle = '#80c342';
+  ctx.fillRect(0, 174, 1024, 18);
+
+  // JR East green square emblem
+  ctx.fillStyle = '#0f6a36';
+  ctx.fillRect(26, 44, 104, 104);
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = 'italic 900 54px sans-serif';
+  ctx.fillText('JR', 78, 114);
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 42px sans-serif';
+  ctx.fillText('新南改札・甲州街道改札   バスタ新宿 4F直結', 154, 96);
+  ctx.fillStyle = '#b4d8f2';
+  ctx.font = '600 22px sans-serif';
+  ctx.fillText('New South Gate · Busta Shinjuku Expressway Bus Terminal / NEWoMan (5:45-24:00)', 154, 142);
+  return toTex(c, 1, 1, true);
+}
+
+// 24. Authentic Japanese JR East Station 『AED 自動体外式除細動器』 Cabinet Face
+function buildAEDCabinetFace(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 384);
+  ctx.fillStyle = '#ecece8';
+  ctx.fillRect(0, 0, 256, 384);
+  ctx.fillStyle = '#c81c24';
+  ctx.fillRect(0, 0, 256, 86);
+  ctx.fillRect(0, 316, 256, 68);
+
+  // Red/White AED Heart-Lightning Icon & Typography
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = '900 52px sans-serif';
+  ctx.fillText('AED', 128, 62);
+
+  // Green heart-bolt official Japanese AED emblem on lower band
+  ctx.fillStyle = '#188844';
+  ctx.fillRect(18, 258, 220, 48);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText('自動体外式除細動器', 128, 289);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillText('緊急時 扉を開けて使用', 128, 344);
+  ctx.font = '700 13px monospace';
+  ctx.fillText('JR EAST SHINJUKU STA.', 128, 368);
+  return toTex(c, 1, 1, true);
+}
+
+// 25. Authentic JR East Barrier-Free Elevator Header Fascia (`エレベーター Elevator`)
+function buildElevatorHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 128);
+  ctx.fillStyle = '#126032';
+  ctx.fillRect(0, 0, 512, 128);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(20, 20, 88, 88);
+  // Crisp elevator pictogram
+  ctx.strokeStyle = '#126032';
+  ctx.lineWidth = 5;
+  ctx.strokeRect(30, 30, 68, 68);
+  ctx.fillStyle = '#126032';
+  ctx.textAlign = 'center';
+  ctx.font = '900 28px sans-serif';
+  ctx.fillText('↑↓', 64, 74);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.font = '800 38px sans-serif';
+  ctx.fillText('エレベーター', 132, 62);
+  ctx.font = '700 22px sans-serif';
+  ctx.fillStyle = '#cdeed8';
+  ctx.fillText('Elevator  B1F ⇄ 1F ホーム・地上', 132, 100);
+  return toTex(c, 1, 1, true);
+}
+
+// 26. JR East Multilingual Shinjuku Digital Guidance Kiosk Screen
+function buildDigitalKioskScreen(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 512);
+  ctx.fillStyle = '#eef4f2';
+  ctx.fillRect(0, 0, 256, 512);
+  ctx.fillStyle = '#126636';
+  ctx.fillRect(0, 0, 256, 72);
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = '800 22px sans-serif';
+  ctx.fillText('JR新宿駅 構内案内', 128, 36);
+  ctx.font = '600 13px sans-serif';
+  ctx.fillText('SHINJUKU STATION INFO', 128, 58);
+
+  // Language pills
+  const langs = ['日本語', 'EN', '中文', '한국어'];
+  langs.forEach((l, i) => {
+    ctx.fillStyle = i === 0 ? '#167840' : '#d2dcd6';
+    ctx.fillRect(14 + i * 58, 86, 52, 26);
+    ctx.fillStyle = i === 0 ? '#ffffff' : '#243028';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(l, 40 + i * 58, 104);
+  });
+
+  // 4 Interactive category tiles
+  const tiles: Array<[string, string, string]> = [
+    ['のりば・路線案内', 'Platforms 1-16', '#26844c'],
+    ['出口・地下街案内', 'Subnade / Keio Mall', '#1c6ca8'],
+    ['バスタ新宿・都庁', 'Busta / Met. Gov.', '#b85c18'],
+    ['コインロッカー・AED', 'Lockers / Facilities', '#5a4294'],
+  ];
+  tiles.forEach(([jp, en, col], idx) => {
+    const ty = 128 + idx * 78;
+    ctx.fillStyle = col;
+    ctx.fillRect(16, ty, 224, 66);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText(jp, 28, ty + 30);
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
+    ctx.font = '600 12px sans-serif';
+    ctx.fillText(en, 28, ty + 52);
+  });
+
+  ctx.fillStyle = '#182026';
+  ctx.fillRect(16, 448, 224, 48);
+  ctx.fillStyle = '#f25858';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText('00:47  終電運行終了', 128, 478);
+  return toTex(c, 1, 1, true);
+}
+
+// 27. Crisp Wrapped Japanese Beverage Bottle & Can Labels for `acure` Vending Machines!
+function buildDrinkLabel(variant: number): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 128);
+  const palettes: Array<{ bg: string; band: string; fg: string; jp: string; en: string }> = [
+    { bg: '#1e7c34', band: '#d8e8a8', fg: '#10441a', jp: '緑茶 濃味', en: 'GREEN TEA' },
+    { bg: '#d8eefc', band: '#1a7ec8', fg: '#ffffff', jp: 'From AQUA', en: 'NATURAL WATER' },
+    { bg: '#c81822', band: '#ffffff', fg: '#b81018', jp: 'COLA ZERO', en: 'SPARKLING' },
+    { bg: '#261a14', band: '#d6a438', fg: '#18100c', jp: 'BOSS 珈琲', en: 'ROAST BLEND' },
+    { bg: '#ea6e14', band: '#fff2b4', fg: '#a83c04', jp: '青森りんご', en: 'acure made' },
+    { bg: '#e8e4d8', band: '#1e4280', fg: '#ffffff', jp: 'ミルクティー', en: 'ROYAL MILK' },
+  ];
+  const p = palettes[variant % palettes.length];
+  ctx.fillStyle = p.bg;
+  ctx.fillRect(0, 0, 256, 128);
+  ctx.fillStyle = p.band;
+  ctx.fillRect(0, 32, 256, 62);
+  ctx.fillStyle = p.fg;
+  ctx.textAlign = 'center';
+  ctx.font = '900 28px sans-serif';
+  ctx.fillText(p.jp, 128, 64);
+  ctx.font = '700 14px monospace';
+  ctx.fillText(p.en, 128, 86);
+  // Subtle barcode & nutritional block on back seam
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.fillRect(8, 98, 42, 22);
+  ctx.fillStyle = '#111111';
+  for (let x = 12; x < 46; x += 4) ctx.fillRect(x, 100, 2, 18);
   return toTex(c, 1, 1, true);
 }
 

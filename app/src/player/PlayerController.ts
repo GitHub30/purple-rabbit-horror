@@ -353,7 +353,8 @@ export class PlayerController {
     audio: HorrorAudio,
     fear: number,
     brightnessMult: number,
-    isOnPuddle: (x: number, z: number) => boolean
+    isOnPuddle: (x: number, z: number) => boolean,
+    getWalkwayDrift?: (x: number, z: number) => number
   ): void {
     // Arrow keys look support
     const keyTurn = 2.15 * this.sensitivity;
@@ -423,20 +424,21 @@ export class PlayerController {
 
       this.sprinting = wantSprint && this.stamina > 0.02;
       if (this.sprinting) {
-        this.stamina = Math.max(0, this.stamina - dt * 0.21);
+        this.stamina = Math.max(0, this.stamina - dt * 0.2);
         if (this.stamina <= 0.01) this.exhausted = true;
       } else {
-        this.stamina = Math.min(1, this.stamina + dt * (moveMag > 0.1 ? 0.13 : 0.24));
+        this.stamina = Math.min(1, this.stamina + dt * (moveMag > 0.1 ? 0.15 : 0.25));
         if (this.exhausted && this.stamina > 0.3) this.exhausted = false;
       }
 
-      const speed = this.crouching ? 2.25 : this.sprinting ? 6.45 : 3.95;
+      const speed = this.crouching ? 2.35 : this.sprinting ? 6.8 : 4.2;
       const fx = -Math.sin(this.yaw);
       const fz = -Math.cos(this.yaw);
       const rx = Math.cos(this.yaw);
       const rz = -Math.sin(this.yaw);
 
-      const nx = this.position.x + (fx * fwd + rx * strafe) * speed * dt;
+      const beltDriftX = getWalkwayDrift ? getWalkwayDrift(this.position.x, this.position.z) : 0;
+      const nx = this.position.x + ((fx * fwd + rx * strafe) * speed + beltDriftX) * dt;
       const nz = this.position.z + (fz * fwd + rz * strafe) * speed * dt;
       const res = collision.resolveCircle(nx, nz, 0.42);
       this.position.x = res.x;

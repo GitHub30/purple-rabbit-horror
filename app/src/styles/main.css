@@ -398,7 +398,7 @@ body.is-hiding .interact-prompt { top: auto; bottom: 152px; }
 .station-map-panel {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
   z-index: 36; pointer-events: auto;
-  width: min(630px, calc(100vw - 28px));
+  width: min(720px, calc(100vw - 28px));
   max-height: calc(100vh - 24px);
   padding: 12px 14px 11px;
   background: rgba(9, 13, 17, 0.96);
