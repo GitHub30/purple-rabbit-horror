@@ -1,4 +1,4 @@
-const CACHE_NAME = 'purple-rabbit-shinjuku-v5';
+const CACHE_NAME = 'purple-rabbit-shinjuku-v6';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -31,6 +31,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+  if (req.url.includes('rankings.json') || req.url.includes('api.github.com')) return;
   event.respondWith(
     fetch(req)
       .then((res) => {

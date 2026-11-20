@@ -298,18 +298,86 @@
     </div>
   </section>
 
-  <!-- Victory Escape Screen -->
+  <!-- Victory Escape Screen + Clear Ranking Leaderboard -->
   <section id="screen-victory" class="overlay-screen screen-center screen-victory" hidden>
-    <div class="panel-modal panel-success" role="dialog" aria-modal="true">
-      <div class="panel-kicker success-kicker">EAST EXIT CLEARED // 新宿東口・歌舞伎町</div>
-      <h2 class="panel-title">新宿駅からの脱出成功</h2>
-      <p class="panel-lead">
-        深夜の歌舞伎町の冷たい夜気が頬を撫でる。振り返った東口シャッターの隙間から、紫色の大きな耳が静かに揺れているのが見えた。
-      </p>
-      <div id="victory-stats" class="stats-grid"></div>
-      <div class="modal-actions">
-        <button type="button" id="btn-victory-retry" class="btn-primary">もう一度プレイする</button>
-        <button type="button" id="btn-victory-title" class="btn-ghost">タイトルへ戻る</button>
+    <div class="panel-modal panel-success panel-victory-wide" role="dialog" aria-modal="true" aria-labelledby="victory-heading">
+      <div class="victory-layout">
+        <!-- Left Column: Escape Summary & Record Registration -->
+        <div class="victory-summary-col">
+          <div class="victory-head-row">
+            <div>
+              <div class="panel-kicker success-kicker">EAST EXIT CLEARED // 新宿東口・歌舞伎町</div>
+              <h2 id="victory-heading" class="panel-title">新宿駅からの脱出成功</h2>
+            </div>
+            <div id="victory-rank-badge" class="victory-rank-badge rank-S" aria-label="クリア評価ランク">S</div>
+          </div>
+
+          <p class="panel-lead victory-lead">
+            深夜の歌舞伎町の冷たい夜気が頬を撫でる。振り返った東口シャッターの隙間から、紫色の大きな耳が静かに揺れているのが見えた。
+          </p>
+
+          <div id="victory-stats" class="stats-grid victory-stats-grid"></div>
+
+          <form id="ranking-form" class="ranking-form" autocomplete="off">
+            <label for="ranking-name-input" class="ranking-form-label">クリア記録をランキングに登録</label>
+            <div class="ranking-input-row">
+              <input
+                id="ranking-name-input"
+                type="text"
+                maxlength="16"
+                placeholder="ニックネーム（1〜16文字）"
+                class="ranking-input"
+              />
+              <button type="submit" id="btn-ranking-register" class="btn-rank-save">登録</button>
+            </div>
+            <div class="ranking-submit-row">
+              <span id="ranking-feedback" class="ranking-feedback">名前を入力して記録を残そう</span>
+              <button type="button" id="btn-ranking-global" class="btn-rank-global" hidden>
+                全体ランキングへ送信 ↗
+              </button>
+            </div>
+          </form>
+
+          <div class="modal-actions victory-actions">
+            <button type="button" id="btn-victory-retry" class="btn-primary">もう一度プレイする</button>
+            <button type="button" id="btn-victory-title" class="btn-ghost">タイトルへ戻る</button>
+          </div>
+        </div>
+
+        <!-- Right Column: Escape Time Ranking Leaderboard -->
+        <aside class="victory-ranking-col" aria-label="脱出タイムランキング">
+          <div class="ranking-header">
+            <div class="ranking-title-wrap">
+              <span class="ranking-crown" aria-hidden="true">RANKING</span>
+              <h3 class="ranking-heading">脱出タイムランキング</h3>
+            </div>
+            <div class="ranking-header-right">
+              <span id="ranking-sync-badge" class="ranking-sync-badge">読込中…</span>
+              <button type="button" id="btn-ranking-refresh" class="ranking-refresh-btn" title="ランキングを更新" aria-label="ランキングを更新">↻</button>
+            </div>
+          </div>
+
+          <div class="ranking-tabs" role="tablist" aria-label="難易度フィルター">
+            <button type="button" class="ranking-tab is-active" data-rank-filter="all" role="tab" aria-selected="true">すべて</button>
+            <button type="button" class="ranking-tab" data-rank-filter="normal" role="tab" aria-selected="false">通常</button>
+            <button type="button" class="ranking-tab" data-rank-filter="nightmare" role="tab" aria-selected="false">悪夢</button>
+          </div>
+
+          <div id="ranking-your-banner" class="ranking-your-banner"></div>
+
+          <div class="ranking-table-head">
+            <span class="rcol-pos">順位</span>
+            <span class="rcol-name">脱出者</span>
+            <span class="rcol-time">タイム</span>
+            <span class="rcol-grade">評価</span>
+          </div>
+
+          <ol id="victory-ranking-list" class="ranking-list"></ol>
+
+          <div class="ranking-footnote">
+            速いタイム順（同タイムは悪夢・発見メモ優先）
+          </div>
+        </aside>
       </div>
     </div>
   </section>

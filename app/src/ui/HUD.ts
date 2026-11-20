@@ -14,6 +14,23 @@ import {
   SHINJUKU_GRID,
 } from '../station/shinjukuMap';
 import { TerminalInstance } from '../station/ShinjukuStation';
+import {
+  buildGitHubSubmitUrl,
+  computeClearRank,
+  createRunEntry,
+  fetchMergedRankings,
+  formatClearTime,
+  formatShortDate,
+  loadLocalRankings,
+  loadSavedPlayerName,
+  RankingEntry,
+  RankingFilter,
+  RankingRunInput,
+  sanitizePlayerName,
+  saveLocalRanking,
+  savePlayerName,
+  sortRankings,
+} from './Leaderboard';
 
 export type ScreenName = 'LOADING' | 'TITLE' | 'PLAYING' | 'PAUSED' | 'NOTE' | 'JUMPSCARE' | 'GAMEOVER' | 'VICTORY';
 
@@ -86,10 +103,26 @@ export class HUD {
   private noteBodyEl = document.getElementById('note-body')!;
   private gameoverStatsEl = document.getElementById('gameover-stats')!;
   private victoryStatsEl = document.getElementById('victory-stats')!;
+  private victoryRankBadgeEl = document.getElementById('victory-rank-badge')!;
+  private rankingFormEl = document.getElementById('ranking-form') as HTMLFormElement;
+  private rankingNameInputEl = document.getElementById('ranking-name-input') as HTMLInputElement;
+  private rankingRegisterBtn = document.getElementById('btn-ranking-register') as HTMLButtonElement;
+  private rankingFeedbackEl = document.getElementById('ranking-feedback')!;
+  private rankingGlobalBtn = document.getElementById('btn-ranking-global') as HTMLButtonElement;
+  private rankingSyncBadgeEl = document.getElementById('ranking-sync-badge')!;
+  private rankingRefreshBtn = document.getElementById('btn-ranking-refresh') as HTMLButtonElement;
+  private rankingYourBannerEl = document.getElementById('ranking-your-banner')!;
+  private rankingListEl = document.getElementById('victory-ranking-list')!;
+  private rankingTabEls = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-rank-filter]'));
   private diffButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-diff]'));
 
   private subtitleTimeout = 0;
   private selectedDifficulty: 'normal' | 'nightmare' = 'normal';
+  private activeVictoryRun: RankingRunInput | null = null;
+  private registeredRunEntry: RankingEntry | null = null;
+  private cachedRankings: RankingEntry[] = [];
+  private activeRankingFilter: RankingFilter = 'all';
+  private onlineSynced = false;
   mapOpen = false;
 
   constructor(cb: HUDCallbacks) {
@@ -108,6 +141,37 @@ export class HUD {
     document.getElementById('btn-map-close')?.addEventListener('click', () => {
       if (this.mapOpen) this.toggleMap();
     });
+
+    this.rankingFormEl?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.handleRegisterRanking();
+    });
+
+    this.rankingGlobalBtn?.addEventListener('click', () => {
+      if (!this.registeredRunEntry) return;
+      const url = buildGitHubSubmitUrl(this.registeredRunEntry);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      this.rankingFeedbackEl.textContent = '送信ページを開きました（送信後「↻」で反映）';
+    });
+
+    this.rankingRefreshBtn?.addEventListener('click', () => {
+      void this.refreshRankings();
+    });
+
+    for (const tab of this.rankingTabEls) {
+      tab.addEventListener('click', () => {
+        const f = tab.dataset.rankFilter;
+        if (f === 'all' || f === 'normal' || f === 'nightmare') {
+          this.activeRankingFilter = f;
+          for (const b of this.rankingTabEls) {
+            const active = b === tab;
+            b.classList.toggle('is-active', active);
+            b.setAttribute('aria-selected', active ? 'true' : 'false');
+          }
+          this.renderRankingList();
+        }
+      });
+    }
 
     this.muteBtn.addEventListener('click', () => {
       const m = cb.onToggleMute();
@@ -753,11 +817,10 @@ export class HUD {
   }
 
   showEndStats(victory: boolean, stats: EndStats): void {
-    const m = Math.floor(stats.elapsedSec / 60);
-    const s = Math.floor(stats.elapsedSec % 60);
-    const timeStr = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    const timeStr = formatClearTime(stats.elapsedSec);
+    const grade = computeClearRank(stats.elapsedSec, stats.difficulty);
     const html = `
-      <div class="stat-row"><span>舞台</span><strong>新宿駅 地下街全域 180m×116m（東口脱出）</strong></div>
+      <div class="stat-row"><span>舞台</span><strong>新宿駅 180m×116m（東口脱出）</strong></div>
       <div class="stat-row"><span>難易度</span><strong>${stats.difficulty === 'nightmare' ? '悪夢' : '通常'}</strong></div>
       <div class="stat-row"><span>経過時間</span><strong>${timeStr}</strong></div>
       <div class="stat-row"><span>Suicaチャージ</span><strong>${stats.charges} / 5（¥${stats.charges * 200}）</strong></div>
@@ -767,10 +830,232 @@ export class HUD {
     `;
     if (victory) {
       this.victoryStatsEl.innerHTML = html;
+      this.victoryRankBadgeEl.textContent = grade;
+      this.victoryRankBadgeEl.className = `victory-rank-badge rank-${grade}`;
+      this.activeVictoryRun = {
+        elapsedSec: Math.round(Math.max(1, stats.elapsedSec) * 10) / 10,
+        difficulty: stats.difficulty,
+        notesRead: stats.notesRead,
+        totalNotes: stats.totalNotes,
+        chasesSurvived: stats.chasesSurvived,
+        coinsTossed: stats.coinsTossed,
+      };
+      this.registeredRunEntry = null;
+      this.rankingNameInputEl.value = loadSavedPlayerName();
+      this.rankingRegisterBtn.textContent = '登録';
+      this.rankingRegisterBtn.disabled = false;
+      this.rankingGlobalBtn.hidden = true;
+      this.rankingFeedbackEl.textContent = '名前を入力して記録をランキングへ残そう';
+      this.rankingFeedbackEl.classList.remove('is-done');
+      this.activeRankingFilter = 'all';
+      for (const b of this.rankingTabEls) {
+        const active = b.dataset.rankFilter === 'all';
+        b.classList.toggle('is-active', active);
+        b.setAttribute('aria-selected', active ? 'true' : 'false');
+      }
+      this.cachedRankings = loadLocalRankings();
+      this.renderRankingList();
       this.setScreen('VICTORY');
+      void this.refreshRankings();
     } else {
       this.gameoverStatsEl.innerHTML = html;
       this.setScreen('GAMEOVER');
+    }
+  }
+
+  private handleRegisterRanking(): void {
+    if (!this.activeVictoryRun) return;
+    const typed = sanitizePlayerName(this.rankingNameInputEl.value);
+    const finalName = typed || '新宿からの脱出者';
+    this.rankingNameInputEl.value = finalName;
+    savePlayerName(finalName);
+
+    const entry = createRunEntry(finalName, this.activeVictoryRun, this.registeredRunEntry?.id);
+    this.registeredRunEntry = entry;
+    saveLocalRanking(entry);
+
+    const others = this.cachedRankings.filter((e) => e.id !== entry.id);
+    this.cachedRankings = sortRankings([...others, entry]);
+    this.rankingRegisterBtn.textContent = '更新';
+    this.rankingGlobalBtn.hidden = false;
+
+    const allRank = this.cachedRankings.findIndex((e) => e.id === entry.id) + 1;
+    this.rankingFeedbackEl.textContent = `登録完了！ 現在 ${allRank}位（${formatClearTime(entry.elapsedSec)}）`;
+    this.rankingFeedbackEl.classList.add('is-done');
+    this.renderRankingList(true);
+  }
+
+  private async refreshRankings(): Promise<void> {
+    this.rankingSyncBadgeEl.textContent = '同期中…';
+    this.rankingRefreshBtn.classList.add('is-spinning');
+    try {
+      const { entries, onlineSynced } = await fetchMergedRankings();
+      this.onlineSynced = onlineSynced;
+      const merged = new Map<string, RankingEntry>();
+      for (const e of entries) merged.set(e.id, e);
+      if (this.registeredRunEntry && !merged.has(this.registeredRunEntry.id)) {
+        merged.set(this.registeredRunEntry.id, this.registeredRunEntry);
+      }
+      this.cachedRankings = sortRankings(Array.from(merged.values()));
+      this.rankingSyncBadgeEl.textContent = onlineSynced ? 'オンライン同期済' : 'ローカル保存';
+    } catch {
+      this.rankingSyncBadgeEl.textContent = 'ローカル保存';
+    } finally {
+      this.rankingRefreshBtn.classList.remove('is-spinning');
+      this.renderRankingList();
+    }
+  }
+
+  private renderRankingList(scrollToCurrent = false): void {
+    const filter = this.activeRankingFilter;
+    const base = this.cachedRankings.filter((e) => filter === 'all' || e.difficulty === filter);
+
+    const showProvisional =
+      this.activeVictoryRun !== null &&
+      this.registeredRunEntry === null &&
+      (filter === 'all' || this.activeVictoryRun.difficulty === filter);
+
+    let displayEntries: Array<{ entry: RankingEntry; isCurrent: boolean; isProvisional: boolean }> = base.map(
+      (entry) => ({
+        entry,
+        isCurrent: this.registeredRunEntry !== null && entry.id === this.registeredRunEntry.id,
+        isProvisional: false,
+      })
+    );
+
+    if (showProvisional && this.activeVictoryRun) {
+      const provEntry: RankingEntry = {
+        id: '__provisional__',
+        name: sanitizePlayerName(this.rankingNameInputEl.value) || 'あなた（未登録）',
+        elapsedSec: this.activeVictoryRun.elapsedSec,
+        difficulty: this.activeVictoryRun.difficulty,
+        notesRead: this.activeVictoryRun.notesRead,
+        totalNotes: this.activeVictoryRun.totalNotes,
+        chasesSurvived: this.activeVictoryRun.chasesSurvived,
+        coinsTossed: this.activeVictoryRun.coinsTossed,
+        clearedAt: new Date().toISOString(),
+        source: 'local',
+      };
+      const combined = sortRankings([...base, provEntry]);
+      displayEntries = combined.map((entry) => ({
+        entry,
+        isCurrent: entry.id === '__provisional__',
+        isProvisional: entry.id === '__provisional__',
+      }));
+    }
+
+    const totalCount = displayEntries.length;
+    const myIdx = displayEntries.findIndex((item) => item.isCurrent);
+    if (this.activeVictoryRun) {
+      const diffText = filter === 'all' ? '総合' : filter === 'nightmare' ? '悪夢' : '通常';
+      if (myIdx >= 0) {
+        const label = this.registeredRunEntry ? 'あなたの順位' : '暫定順位';
+        this.rankingYourBannerEl.textContent = `${diffText} ${label}: ${myIdx + 1}位 / ${totalCount}人（${formatClearTime(
+          this.activeVictoryRun.elapsedSec
+        )}）`;
+        this.rankingYourBannerEl.hidden = false;
+      } else {
+        this.rankingYourBannerEl.textContent = `${diffText}ランキング: ${totalCount}件のクリア記録`;
+        this.rankingYourBannerEl.hidden = false;
+      }
+    } else {
+      this.rankingYourBannerEl.hidden = true;
+    }
+
+    this.rankingListEl.replaceChildren();
+    if (displayEntries.length === 0) {
+      const empty = document.createElement('li');
+      empty.className = 'ranking-empty';
+      empty.textContent = 'この難易度のクリア記録はまだありません。最初の脱出者として登録しましょう！';
+      this.rankingListEl.appendChild(empty);
+      return;
+    }
+
+    let currentRowEl: HTMLLIElement | null = null;
+    const topSlice = displayEntries.slice(0, 30);
+    // Ensure current player's row is always visible even if below rank 30
+    if (myIdx >= 30) {
+      topSlice.push(displayEntries[myIdx]);
+    }
+
+    topSlice.forEach((item, listIdx) => {
+      const rankNum = item.isCurrent && myIdx >= 30 ? myIdx + 1 : listIdx + 1;
+      const { entry, isCurrent, isProvisional } = item;
+      const grade = computeClearRank(entry.elapsedSec, entry.difficulty);
+
+      const li = document.createElement('li');
+      li.className = 'ranking-row';
+      if (rankNum === 1) li.classList.add('is-top1');
+      else if (rankNum === 2) li.classList.add('is-top2');
+      else if (rankNum === 3) li.classList.add('is-top3');
+      if (isCurrent) {
+        li.classList.add('is-current');
+        currentRowEl = li;
+      }
+      if (isProvisional) li.classList.add('is-provisional');
+
+      const posEl = document.createElement('span');
+      posEl.className = 'rcol-pos';
+      posEl.textContent =
+        rankNum === 1 ? '1' : rankNum === 2 ? '2' : rankNum === 3 ? '3' : String(rankNum);
+
+      const nameWrap = document.createElement('span');
+      nameWrap.className = 'rcol-name';
+
+      const nameText = document.createElement('span');
+      nameText.className = 'ranking-player-name';
+      nameText.textContent = entry.name;
+      nameWrap.appendChild(nameText);
+
+      const metaWrap = document.createElement('span');
+      metaWrap.className = 'ranking-meta-tags';
+
+      const diffBadge = document.createElement('span');
+      diffBadge.className = `ranking-diff-tag is-${entry.difficulty}`;
+      diffBadge.textContent = entry.difficulty === 'nightmare' ? '悪夢' : '通常';
+      metaWrap.appendChild(diffBadge);
+
+      if (isProvisional) {
+        const tag = document.createElement('span');
+        tag.className = 'ranking-src-tag is-prov';
+        tag.textContent = '未登録';
+        metaWrap.appendChild(tag);
+      } else if (entry.source === 'global' || entry.source === 'live') {
+        const tag = document.createElement('span');
+        tag.className = 'ranking-src-tag is-global';
+        tag.textContent = '全体';
+        metaWrap.appendChild(tag);
+      } else {
+        const tag = document.createElement('span');
+        tag.className = 'ranking-src-tag is-local';
+        tag.textContent = '自分';
+        metaWrap.appendChild(tag);
+      }
+
+      const dateText = formatShortDate(entry.clearedAt);
+      if (dateText && !isProvisional) {
+        const dtEl = document.createElement('span');
+        dtEl.className = 'ranking-date-tag';
+        dtEl.textContent = `メモ${entry.notesRead}/${entry.totalNotes} · ${dateText}`;
+        metaWrap.appendChild(dtEl);
+      }
+
+      nameWrap.appendChild(metaWrap);
+
+      const timeEl = document.createElement('span');
+      timeEl.className = 'rcol-time';
+      timeEl.textContent = formatClearTime(entry.elapsedSec);
+
+      const gradeEl = document.createElement('span');
+      gradeEl.className = `rcol-grade rank-pill rank-${grade}`;
+      gradeEl.textContent = grade;
+
+      li.append(posEl, nameWrap, timeEl, gradeEl);
+      this.rankingListEl.appendChild(li);
+    });
+
+    if (scrollToCurrent && currentRowEl) {
+      (currentRowEl as HTMLLIElement).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }
 }
