@@ -34,6 +34,7 @@ import {
   drawTerminalScreen,
   updateDepartureBoard,
 } from './shinjukuTextures';
+import { ShinjukuPropLibrary } from './shinjukuProps';
 
 export interface TerminalInstance {
   def: TerminalDef;
@@ -118,6 +119,7 @@ interface CctvCamera {
 export class ShinjukuStation {
   root = new THREE.Group();
   textures: ShinjukuTextureSet;
+  private props: ShinjukuPropLibrary;
   terminals: TerminalInstance[] = [];
   closets: HidingSpotInstance[] = [];
   notes: NoteInstance[] = [];
@@ -164,6 +166,7 @@ export class ShinjukuStation {
 
   constructor(scene: THREE.Scene) {
     this.textures = createShinjukuTextures();
+    this.props = new ShinjukuPropLibrary(this.textures);
     this.nearestTerminalLight = new THREE.PointLight(0x4be0a8, 2.0, 9.5, 1.9);
     this.nearestTerminalLight.position.set(46, 1.6, 39);
     this.dynamicEventLight = new THREE.PointLight(0xeef8ff, 0, 24, 1.5);
@@ -657,7 +660,6 @@ export class ShinjukuStation {
 
     // 2. TOKYO METRO MARUNOUCHI LINE (M08) WEST & EAST GATES (R1, C9..12 & C21..24) + METRO PROMENADE!
     const maruHeaderMat = makeBacklitMat(this.textures.marunouchiHeader, 0.64);
-    const maruRedMat = new THREE.MeshStandardMaterial({ color: 0xc81220, roughness: 0.36, metalness: 0.14 });
     const buildMetroGateBay = (cx: number, zFront: number) => {
       const g = new THREE.Group();
       g.position.set(cx, 0, zFront);
@@ -670,13 +672,9 @@ export class ShinjukuStation {
       glass.position.set(0, 1.38, -0.1);
       const shutter = new THREE.Mesh(new THREE.PlaneGeometry(15.6, 2.75), shutterMat);
       shutter.position.set(0, 1.38, -2.6);
-      // Red-capped Tokyo Metro turnstile silhouette row visible behind glass!
+      // Ultra-precise crimson Tokyo Metro automatic turnstiles visible behind glass!
       for (let tx = -6.0; tx <= 6.0; tx += 2.0) {
-        const ts = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.9, 1.3), darkMetal);
-        ts.position.set(tx, 0.45, -1.25);
-        const cap = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.82, 0.14), maruRedMat);
-        cap.position.set(tx, 0.44, -0.58);
-        g.add(ts, cap);
+        g.add(this.props.buildEG20Turnstile(tx, -1.25, 0, 0xc81220, false, false));
       }
       g.add(headerBox, headerFace, glass, shutter);
       this.root.add(g);
@@ -698,7 +696,6 @@ export class ShinjukuStation {
 
     // 3A. ODAKYU LINE WEST UNDERGROUND GATE (小田急線 西口地下改札口 OH01: C1, R13..16 -> x = 8.0m, facing East!)
     const odakyuMat = makeBacklitMat(this.textures.odakyuHeader, 0.64);
-    const odakyuBlueMat = new THREE.MeshStandardMaterial({ color: 0x0072c6, roughness: 0.34, metalness: 0.18 });
     const odakyuG = new THREE.Group();
     odakyuG.position.set(2.0 * CELL, 0, 15.0 * CELL);
     odakyuG.rotation.y = Math.PI / 2;
@@ -711,11 +708,7 @@ export class ShinjukuStation {
     const odShutter = new THREE.Mesh(new THREE.PlaneGeometry(15.6, 2.75), shutterMat);
     odShutter.position.set(0, 1.38, -2.8);
     for (let tx = -6.0; tx <= 6.0; tx += 2.0) {
-      const ts = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.9, 1.3), darkMetal);
-      ts.position.set(tx, 0.45, -1.35);
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.82, 0.14), odakyuBlueMat);
-      cap.position.set(tx, 0.44, -0.68);
-      odakyuG.add(ts, cap);
+      odakyuG.add(this.props.buildEG20Turnstile(tx, -1.35, 0, 0x0072c6, false, false));
     }
     odakyuG.add(odBox, odFace, odGlass, odShutter);
     this.root.add(odakyuG);
@@ -723,7 +716,6 @@ export class ShinjukuStation {
 
     // 3B. KEIO LINE KEIO WEST GATE (京王線 京王西口 KO01: C2..4, R20 -> z = 80.0m, facing North!)
     const keioMat = makeBacklitMat(this.textures.keioHeader, 0.64);
-    const keioPinkMat = new THREE.MeshStandardMaterial({ color: 0xcf006c, roughness: 0.34, metalness: 0.18 });
     const keioG = new THREE.Group();
     keioG.position.set(3.5 * CELL, 0, 20.0 * CELL);
     keioG.rotation.y = Math.PI;
@@ -736,11 +728,7 @@ export class ShinjukuStation {
     const keShutter = new THREE.Mesh(new THREE.PlaneGeometry(11.6, 2.75), shutterMat);
     keShutter.position.set(0, 1.38, -2.8);
     for (let tx = -4.2; tx <= 4.2; tx += 2.1) {
-      const ts = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.9, 1.3), darkMetal);
-      ts.position.set(tx, 0.45, -1.35);
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.82, 0.14), keioPinkMat);
-      cap.position.set(tx, 0.44, -0.68);
-      keioG.add(ts, cap);
+      keioG.add(this.props.buildEG20Turnstile(tx, -1.35, 0, 0xcf006c, false, false));
     }
     keioG.add(keBox, keFace, keGlass, keShutter);
     this.root.add(keioG);
@@ -979,21 +967,8 @@ export class ShinjukuStation {
     // 2. SOUTH SIDE OF 東西自由通路: 『きっぷうりば』(c=10..12, x=40..52m) & 『みどりの窓口』(c=13..15, x=52..64m)
     const southZ = 10.0 * CELL; // z = 40.0m (facing North into 東西自由通路)
 
-    // 2A. 『きっぷうりば』(x = 40.2m .. 51.8m, center = 46.0m)
-    const ticketWall = new THREE.Mesh(
-      new THREE.PlaneGeometry(11.2, 2.35),
-      new THREE.MeshStandardMaterial({
-        color: 0x5c646a,
-        map: this.textures.ticketMachineFront,
-        emissive: new THREE.Color(0xdcf0e8),
-        emissiveMap: this.textures.ticketMachineFront,
-        emissiveIntensity: 0.44,
-        roughness: 0.72,
-      })
-    );
-    ticketWall.position.set(46.0, 1.18, southZ - 0.05);
-    ticketWall.rotation.y = Math.PI;
-    this.root.add(ticketWall);
+    // 2A. 『きっぷうりば』(x = 40.2m .. 51.8m, center = 46.0m) — 9 Sculpted 3D EV20 & MV50 Machines!
+    this.root.add(this.props.buildTicketMachineBank(46.0, southZ));
 
     const fareBoard = new THREE.Mesh(
       new THREE.PlaneGeometry(11.0, 0.82),
@@ -1006,7 +981,7 @@ export class ShinjukuStation {
         roughness: 0.74,
       })
     );
-    fareBoard.position.set(46.0, 2.64, southZ - 0.18);
+    fareBoard.position.set(46.0, 2.74, southZ - 0.18);
     fareBoard.rotation.y = Math.PI;
     fareBoard.rotation.x = 0.22;
     this.root.add(fareBoard);
@@ -1026,11 +1001,10 @@ export class ShinjukuStation {
     const glassMat = new THREE.MeshPhysicalMaterial({
       color: 0xb8d4dc,
       transparent: true,
-      opacity: 0.32,
-      roughness: 0.08,
-      metalness: 0.1,
-      reflectivity: 0.85,
-      clearcoat: 0.85,
+      opacity: 0.22,
+      roughness: 0.22,
+      metalness: 0.06,
+      clearcoat: 0.28,
     });
 
     const midoriSignMat = new THREE.MeshStandardMaterial({
@@ -1144,34 +1118,7 @@ export class ShinjukuStation {
   // 3. 中央西改札 (Central West Gate: C6, R16..18 -> gateX = 26.0m, centerZ = 70.0m)
   // 4. 中央東改札 (Central East Gate: C30, R16..18 -> gateX = 122.0m, centerZ = 70.0m)
   private buildFourShinjukuTicketGates(): void {
-    const steel = new THREE.MeshStandardMaterial({
-      color: 0xbac2ca,
-      normalMap: this.textures.brushedMetalNormal,
-      normalScale: new THREE.Vector2(0.38, 0.38),
-      roughness: 0.28,
-      metalness: 0.82,
-      envMapIntensity: 1.05,
-    });
     const darkTop = new THREE.MeshStandardMaterial({ color: 0x161a20, roughness: 0.34, metalness: 0.45 });
-    const jrGateGreen = new THREE.MeshStandardMaterial({
-      color: 0x3ea038,
-      roughness: 0.34,
-      metalness: 0.16,
-    });
-    const suicaPad = new THREE.MeshStandardMaterial({
-      color: 0x3ec4e4,
-      emissive: new THREE.Color(0x1888b8),
-      emissiveIntensity: 0.88,
-      roughness: 0.28,
-    });
-    const frontArrowMat = new THREE.MeshStandardMaterial({
-      color: 0x424a52,
-      map: this.textures.turnstileFrontArrow,
-      emissive: new THREE.Color(0x64f0a8),
-      emissiveMap: this.textures.turnstileFrontArrow,
-      emissiveIntensity: 0.62,
-      roughness: 0.68,
-    });
     const glossyWhitePillarMat = new THREE.MeshStandardMaterial({
       color: 0xd8dad6,
       roughness: 0.34,
@@ -1184,40 +1131,8 @@ export class ShinjukuStation {
       metalness: 0.14,
     });
 
-    const arrowGeo = new THREE.PlaneGeometry(0.19, 0.44);
-
     const addTurnstileUnit = (x: number, z: number, rotY = 0) => {
-      const u = new THREE.Group();
-      u.position.set(x, 0, z);
-      u.rotation.y = rotY;
-
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.92, 1.46), steel);
-      body.position.y = 0.46;
-      body.castShadow = true;
-      u.add(body);
-
-      for (const ez of [-0.71, 0.71]) {
-        const cap = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.84, 0.14), jrGateGreen);
-        cap.position.set(0, 0.45, ez);
-        u.add(cap);
-
-        const arrowFace = new THREE.Mesh(arrowGeo, frontArrowMat);
-        arrowFace.position.set(0, 0.62, ez + (ez > 0 ? 0.072 : -0.072));
-        if (ez < 0) arrowFace.rotation.y = Math.PI;
-        u.add(arrowFace);
-      }
-
-      const top = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.06, 1.5), darkTop);
-      top.position.y = 0.94;
-      u.add(top);
-
-      for (const pz of [-0.52, 0.52]) {
-        const pad = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.22), suicaPad);
-        pad.position.set(0, 0.975, pz);
-        pad.rotation.x = pz > 0 ? 0.22 : -0.22;
-        u.add(pad);
-      }
-      this.root.add(u);
+      this.root.add(this.props.buildEG20Turnstile(x, z, rotY, 0x3ea038, true, true));
     };
 
     const buildNorthSouthGatePortal = (
@@ -1731,162 +1646,25 @@ export class ShinjukuStation {
   }
 
   private buildAlpsPedestal(): void {
-    const g = new THREE.Group();
-    g.position.set(PEDESTAL_POS.x, 0, PEDESTAL_POS.z);
-    g.rotation.y = -Math.PI / 2;
-
-    const marble = new THREE.MeshStandardMaterial({
-      color: 0x1e2328,
-      roughness: 0.28,
-      metalness: 0.3,
-      envMapIntensity: 0.95,
-    });
-    const brass = new THREE.MeshStandardMaterial({ color: 0xba9c52, roughness: 0.26, metalness: 0.86 });
-
-    const step1 = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.24, 2.05), marble);
-    step1.position.y = 0.12;
-    step1.castShadow = true;
-    step1.receiveShadow = true;
-    g.add(step1);
-
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.56, 1.65), marble);
-    body.position.y = 0.52;
-    body.castShadow = true;
-    body.receiveShadow = true;
-    g.add(body);
-
-    const trim = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.04, 1.7), brass);
-    trim.position.y = 0.8;
-    g.add(trim);
-
-    const plaque = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.18, 0.54),
-      new THREE.MeshStandardMaterial({ map: this.textures.pedestalPlaque, roughness: 0.42 })
-    );
-    plaque.position.set(0, 0.5, 0.835);
-    g.add(plaque);
-
-    const shardMat = new THREE.MeshPhysicalMaterial({
-      color: 0xbce6ee,
-      transparent: true,
-      opacity: 0.55,
-      roughness: 0.05,
-      metalness: 0.2,
-      reflectivity: 1.0,
-      side: THREE.DoubleSide,
-    });
-    const shards: Array<[number, number, number, number]> = [
-      [0.65, -1.25, 0.34, 0.4], [-0.85, -1.1, 0.26, 1.1], [0.22, -1.55, 0.22, 2.2],
-      [-0.4, -1.45, 0.3, 0.8], [1.15, -0.7, 0.24, 1.7],
-    ];
-    for (const [sx, sz, sc, rot] of shards) {
-      const m = new THREE.Mesh(new THREE.CircleGeometry(sc, 3), shardMat);
-      m.rotation.x = -Math.PI / 2;
-      m.rotation.z = rot;
-      m.position.set(sx, 0.015, sz);
-      g.add(m);
-    }
-
-    const posts: Array<[number, number, boolean]> = [
-      [-1.4, 1.4, false],
-      [1.4, 1.4, false],
-      [-1.4, -1.4, false],
-      [1.4, -1.4, true],
-    ];
-    for (const [px, pz, fallen] of posts) {
-      const p = new THREE.Group();
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.04, 12), brass);
-      base.position.y = 0.02;
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.88, 8), brass);
-      pole.position.y = 0.46;
-      pole.castShadow = true;
-      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.046, 10, 10), brass);
-      cap.position.y = 0.92;
-      p.add(base, pole, cap);
-      p.position.set(px, 0, pz);
-      if (fallen) {
-        p.rotation.z = -Math.PI / 2 + 0.06;
-        p.rotation.y = 0.6;
-        p.position.set(px + 0.32, 0.05, pz - 0.25);
-      }
-      g.add(p);
-    }
-
-    const fpMat = new THREE.MeshStandardMaterial({
-      color: 0x4e2278,
-      emissive: new THREE.Color(0x1c0830),
-      emissiveIntensity: 0.45,
-      transparent: true,
-      opacity: 0.78,
-      roughness: 0.22,
-    });
-    for (let i = 0; i < 8; i++) {
-      const fp = new THREE.Mesh(new THREE.CircleGeometry(0.17, 12), fpMat);
-      fp.rotation.x = -Math.PI / 2;
-      fp.scale.set(0.85, 1.38, 1);
-      fp.position.set((i % 2 === 0 ? -0.24 : 0.24) + i * 0.03, 0.013, -1.4 - i * 0.92);
-      g.add(fp);
-    }
-
-    this.root.add(g);
+    this.root.add(this.props.buildAlpsPedestal3D(PEDESTAL_POS));
   }
 
   // Final Escape Exit Gate & Rolling Steel Shutter at the East end of 東西自由通路 (東口・歌舞伎町／アルタ方面 地上出口)
   private buildEastExitPortal(): void {
     const gx = GATE_LINE_X;
     const gz = GATE_LINE_Z;
-    const steel = new THREE.MeshStandardMaterial({
-      color: 0xaab2ba,
-      normalMap: this.textures.brushedMetalNormal,
-      normalScale: new THREE.Vector2(0.45, 0.45),
-      roughness: 0.28,
-      metalness: 0.84,
-      envMapIntensity: 1.05,
-    });
     const darkTop = new THREE.MeshStandardMaterial({ color: 0x1b2026, roughness: 0.38, metalness: 0.42 });
-    const jrGateGreen = new THREE.MeshStandardMaterial({ color: 0x3ea038, roughness: 0.32, metalness: 0.16 });
     const redPaddle = new THREE.MeshStandardMaterial({
       color: 0xd03838,
       emissive: new THREE.Color(0x521212),
       emissiveIntensity: 0.55,
       roughness: 0.34,
     });
-    const suicaPad = new THREE.MeshStandardMaterial({
-      color: 0x3ec8e8,
-      emissive: new THREE.Color(0x1a88b4),
-      emissiveIntensity: 0.88,
-      roughness: 0.28,
-    });
 
-    // 6 automatic emergency exit gate machines centered around gz = 30.0m (R6..R8 -> z = 24..36m)
+    // 6 ultra-precise EG20 automatic emergency exit gate machines centered around gz = 30.0m (R6..R8 -> z = 24..36m)
     const offsets = [-3.6, -2.0, -1.1, 1.1, 2.0, 3.6];
     for (const dz of offsets) {
-      const uz = gz + dz;
-      const unit = new THREE.Group();
-      unit.position.set(gx, 0, uz);
-      unit.rotation.y = -Math.PI / 2;
-
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.94, 1.38), steel);
-      body.position.y = 0.47;
-      body.castShadow = true;
-      unit.add(body);
-
-      for (const ez of [-0.67, 0.67]) {
-        const cap = new THREE.Mesh(new THREE.BoxGeometry(0.33, 0.84, 0.14), jrGateGreen);
-        cap.position.set(0, 0.45, ez);
-        unit.add(cap);
-      }
-
-      const top = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 1.4), darkTop);
-      top.position.y = 0.96;
-      unit.add(top);
-
-      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.24), suicaPad);
-      pad.position.set(0, 0.99, 0.46);
-      pad.rotation.x = 0.24;
-      unit.add(pad);
-
-      this.root.add(unit);
+      this.root.add(this.props.buildEG20Turnstile(gx, gz + dz, -Math.PI / 2, 0x3ea038, true, false));
     }
 
     this.centerPaddleMat = new THREE.MeshStandardMaterial({
@@ -2022,13 +1800,14 @@ export class ShinjukuStation {
       roughness: 0.44,
       metalness: 0.42,
     });
+    const greenGuideLed = new THREE.MeshBasicMaterial({ color: 0x38e492 });
 
     for (const def of TERMINALS) {
       const g = new THREE.Group();
       g.position.set(def.x, 0, def.z);
       g.rotation.y = def.rotY;
 
-      // 1. Dark steel floor kickplate plinth
+      // 1. Dark steel floor kickplate plinth & vertical stainless trim ribs
       const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.12, 0.62), darkMetalMat);
       plinth.position.set(0, 0.06, 0);
       g.add(plinth);
@@ -2039,6 +1818,11 @@ export class ShinjukuStation {
       mainBody.castShadow = true;
       mainBody.receiveShadow = true;
       g.add(mainBody);
+      for (const rx of [-0.425, 0.425]) {
+        const trimRib = new THREE.Mesh(new THREE.BoxGeometry(0.025, 1.78, 0.04), this.props.chromeMat);
+        trimRib.position.set(rx, 1.01, 0.292);
+        g.add(trimRib);
+      }
 
       // 3. Upper canopy & authentic JR East 『JR / IC / きっぷ・チャージ / Tickets Charge』 backlit fascia!
       const headerHousing = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.44, 0.66), darkMetalMat);
@@ -2068,7 +1852,7 @@ export class ShinjukuStation {
       scr.rotation.x = -0.14;
       g.add(scr);
 
-      // 4 Physical 3D Tactile Buttons on the left side of the touchscreen (Screenshot_20261120-100223.png!)
+      // 4 Physical 3D Tactile Buttons on the left side of the touchscreen + speaker dot cluster
       for (let b = 0; b < 4; b++) {
         const btn = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.055, 0.03), buttonWhiteMat);
         btn.position.set(-0.33, 1.38 - b * 0.088, 0.302);
@@ -2081,34 +1865,44 @@ export class ShinjukuStation {
       deckShelf.rotation.x = 0.2;
       g.add(deckShelf);
 
-      // Glowing 3D Suica IC Card Holder / Touch Tray on the console shelf!
+      // Glowing 3D Suica IC Card Holder / Touch Tray with crisp 『IC』 texture!
       const holderBezel = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.04, 0.18), darkMetalMat);
       holderBezel.position.set(-0.22, 1.005, 0.37);
       holderBezel.rotation.x = 0.2;
       const padMat = new THREE.MeshStandardMaterial({
-        color: 0x2a8e84,
-        emissive: new THREE.Color(0x1da89a),
-        emissiveIntensity: 0.74,
-        roughness: 0.46,
+        color: 0x3a6474,
+        map: this.textures.suicaTouchPad,
+        emissive: new THREE.Color(0x28c4b8),
+        emissiveMap: this.textures.suicaTouchPad,
+        emissiveIntensity: 0.85,
+        roughness: 0.44,
       });
-      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.02, 0.13), padMat);
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.02, 0.14), padMat);
       pad.position.set(-0.22, 1.022, 0.375);
       pad.rotation.x = 0.2;
       g.add(holderBezel, pad);
 
-      // 3D Coin cup & Bill acceptor bezel next to IC card tray
+      // 3D Coin cup, Bill acceptor bezel + green intake guide LED, and Braille plate!
       const coinCup = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.14), darkMetalMat);
       coinCup.position.set(0.04, 1.005, 0.37);
       coinCup.rotation.x = 0.2;
       const billBezel = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.14), darkMetalMat);
       billBezel.position.set(0.26, 1.005, 0.37);
       billBezel.rotation.x = 0.2;
-      g.add(coinCup, billBezel);
+      const billLed = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.012, 0.012), greenGuideLed);
+      billLed.position.set(0.26, 1.032, 0.335);
+      const braillePlate = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.012), this.props.chromeMat);
+      braillePlate.position.set(-0.24, 0.86, 0.305);
+      g.add(coinCup, billBezel, billLed, braillePlate);
 
-      // 6. Detailed Lower Brushed-Stainless Dispenser Panel (きっぷ・おつり・領収書)
+      // 6. Detailed Lower Brushed-Stainless Dispenser Panel + Recessed 3D Ticket/Change Cavity!
       const lowerFace = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.78), lowerDeckMat);
       lowerFace.position.set(0, 0.51, 0.296);
-      g.add(lowerFace);
+      const ticketPocket = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.14, 0.06), darkMetalMat);
+      ticketPocket.position.set(0, 0.38, 0.278);
+      const pocketLip = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.022, 0.04), this.props.chromeMat);
+      pocketLip.position.set(0, 0.31, 0.302);
+      g.add(lowerFace, ticketPocket, pocketLip);
 
       // Subtle floor indicator glow in front of the machine
       const fx = def.x + Math.sin(def.rotY) * 1.0;
@@ -2130,135 +1924,25 @@ export class ShinjukuStation {
   }
 
   private buildHidingSpots(): void {
-    const lockerMat = new THREE.MeshStandardMaterial({
-      color: 0x2e3b46,
-      roughness: 0.44,
-      metalness: 0.68,
-      envMapIntensity: 1.15,
-    });
-    const innerMat = new THREE.MeshStandardMaterial({ color: 0x0b0e11, roughness: 0.92 });
-    const slatMat = new THREE.MeshStandardMaterial({ color: 0x1a2026, roughness: 0.42, metalness: 0.72 });
-    const handleMat = new THREE.MeshStandardMaterial({
-      color: 0xd6b044,
-      emissive: new THREE.Color(0x523e12),
-      emissiveIntensity: 0.65,
-      roughness: 0.36,
-    });
-    const boothGreen = new THREE.MeshStandardMaterial({ color: 0x165e3a, roughness: 0.36, metalness: 0.52 });
-    const boothGlass = new THREE.MeshPhysicalMaterial({
-      color: 0xaad8c8,
-      transparent: true,
-      opacity: 0.32,
-      roughness: 0.14,
-      clearcoat: 1.0,
-    });
-
     for (const def of HIDING_SPOTS) {
-      const g = new THREE.Group();
-      g.position.set(def.x, 0, def.z);
-      g.rotation.y = def.rotY;
-
       if (def.kind === 'phonebooth') {
-        const back = new THREE.Mesh(new THREE.BoxGeometry(1.06, 2.38, 0.06), boothGreen);
-        back.position.set(0, 1.19, -0.48);
-        const leftG = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.32, 0.96), boothGlass);
-        leftG.position.set(-0.5, 1.16, 0);
-        const rightG = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.32, 0.96), boothGlass);
-        rightG.position.set(0.5, 1.16, 0);
-        const roof = new THREE.Mesh(new THREE.BoxGeometry(1.12, 0.24, 1.06), boothGreen);
-        roof.position.set(0, 2.38, 0);
-
-        const signMat = new THREE.MeshStandardMaterial({
-          map: this.textures.signPayphone,
-          emissive: new THREE.Color(0x88f6b4),
-          emissiveMap: this.textures.signPayphone,
-          emissiveIntensity: 1.35,
-        });
-        const signFace = new THREE.Mesh(new THREE.PlaneGeometry(0.94, 0.22), signMat);
-        signFace.position.set(0, 2.38, 0.54);
-
-        const phoneBox = new THREE.Mesh(
-          new THREE.BoxGeometry(0.28, 0.36, 0.2),
-          new THREE.MeshStandardMaterial({ color: 0x1a8448, roughness: 0.32, metalness: 0.22 })
-        );
-        phoneBox.position.set(-0.18, 1.32, -0.34);
-
-        const doorPivot = new THREE.Group();
-        doorPivot.position.set(-0.48, 0, 0.48);
-        const dBottom = new THREE.Mesh(new THREE.BoxGeometry(0.96, 1.16, 0.04), boothGreen);
-        dBottom.position.set(0.48, 0.58, 0);
-        const dTop = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.44, 0.04), boothGreen);
-        dTop.position.set(0.48, 2.08, 0);
-        const dGlass = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.72, 0.03), boothGlass);
-        dGlass.position.set(0.48, 1.52, 0);
-        const dHandle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.22, 0.07), handleMat);
-        dHandle.position.set(0.84, 1.1, 0.04);
-        doorPivot.add(dBottom, dTop, dGlass, dHandle);
-
+        const { group, doorPivot } = this.props.buildPhoneBooth3D(def);
         const phoneGlowMat = this.addFloorGlowPool(def.x + 0.85, def.z, 3.6, 3.6, 0x4ae090, 0.36);
-        g.add(back, leftG, rightG, roof, signFace, phoneBox, doorPivot);
-        this.root.add(g);
-        this.closets.push({ def, group: g, doorPivot, doorAngle: 0, targetAngle: 0, phoneGlowMat });
+        this.root.add(group);
+        this.closets.push({ def, group, doorPivot, doorAngle: 0, targetAngle: 0, phoneGlowMat });
       } else {
-        const back = new THREE.Mesh(new THREE.BoxGeometry(0.98, 2.26, 0.06), innerMat);
-        back.position.set(0, 1.13, -0.45);
-        const left = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.26, 0.94), lockerMat);
-        left.position.set(-0.47, 1.13, 0);
-        const right = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.26, 0.94), lockerMat);
-        right.position.set(0.47, 1.13, 0);
-        const top = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.06, 0.96), lockerMat);
-        top.position.set(0, 2.25, 0);
-
-        const doorPivot = new THREE.Group();
-        doorPivot.position.set(-0.45, 0, 0.45);
-        const lower = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.34, 0.04), lockerMat);
-        lower.position.set(0.45, 0.67, 0);
-        const upper = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.48, 0.04), lockerMat);
-        upper.position.set(0.45, 2.01, 0);
-        doorPivot.add(lower, upper);
-
-        for (const sy of [1.44, 1.56, 1.68]) {
-          const slat = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.022, 0.045), slatMat);
-          slat.position.set(0.45, sy, 0);
-          slat.rotation.x = 0.2;
-          doorPivot.add(slat);
-        }
-        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.07), handleMat);
-        handle.position.set(0.79, 1.08, 0.04);
-        const badge = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.06, 0.05), handleMat);
-        badge.position.set(0.45, 1.85, 0.02);
-        doorPivot.add(handle, badge);
-
-        g.add(back, left, right, top, doorPivot);
-        this.root.add(g);
-        this.closets.push({ def, group: g, doorPivot, doorAngle: 0, targetAngle: 0 });
+        const { group, doorPivot } = this.props.buildMaintenanceLocker3D(def);
+        this.root.add(group);
+        this.closets.push({ def, group, doorPivot, doorAngle: 0, targetAngle: 0 });
       }
     }
   }
 
   private buildShinjukuPropsAndSignage(): void {
-    const lockerMat = new THREE.MeshStandardMaterial({
-      map: this.textures.lockerMetal,
-      roughness: 0.4,
-      metalness: 0.65,
-      envMapIntensity: 1.2,
-    });
-    const darkMetal = new THREE.MeshStandardMaterial({ color: 0x20262c, roughness: 0.46, metalness: 0.72 });
+    const darkMetal = this.props.darkSteelMat;
 
-    // 1. Inside-Gate Yellow 『精算機 Fare Adjustment Machine』 Bank next to 13・14番線 stairs (C10..12, R11 North wall -> z = 44.06m)
-    const fareAdjustWall = new THREE.Mesh(
-      new THREE.PlaneGeometry(5.6, 2.25),
-      new THREE.MeshStandardMaterial({
-        color: 0x5c6064,
-        map: this.textures.fareAdjustFront,
-        emissive: new THREE.Color(0xfff0b8),
-        emissiveMap: this.textures.fareAdjustFront,
-        emissiveIntensity: 0.56,
-        roughness: 0.7,
-      })
-    );
-    fareAdjustWall.position.set(43.8, 1.14, 11.0 * CELL + 0.05);
-    this.root.add(fareAdjustWall);
+    // 1. Sculpted 3D Golden-Yellow 『のりこし精算機』 Bank next to 13・14番線 stairs (3 physical machines clear of term-inside-14!)
+    this.root.add(this.props.buildFareAdjustmentBank(43.0, 11.0 * CELL));
 
     const fareAdjustHeader = new THREE.Mesh(
       new THREE.PlaneGeometry(3.4, 0.56),
@@ -2271,11 +1955,11 @@ export class ShinjukuStation {
         roughness: 0.72,
       })
     );
-    fareAdjustHeader.position.set(43.8, 2.65, 11.0 * CELL + 0.08);
+    fareAdjustHeader.position.set(43.0, 2.68, 11.0 * CELL + 0.08);
     this.root.add(fareAdjustHeader);
-    this.addFloorGlowPool(43.8, 11.0 * CELL + 1.5, 6.2, 3.2, 0xe8c438, 0.2);
+    this.addFloorGlowPool(43.0, 11.0 * CELL + 1.5, 5.2, 3.2, 0xe8c438, 0.2);
 
-    // 2. Suica Coin Locker banks along West Plaza, Metro Promenade, Central Passage & East Plaza
+    // 2. Ultra-Precise 3D Multi-Door 『Suica コインロッカー』 Banks with Central Touch Terminals & LED Pips!
     for (const [lx, lz, ry] of [
       [23.72, 43.0, 0],
       [23.72, 45.2, 0],
@@ -2288,100 +1972,29 @@ export class ShinjukuStation {
       [62.0, 15.72, Math.PI / 2],
       [64.2, 15.72, Math.PI / 2],
     ]) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(0.56, 2.1, 1.9), lockerMat);
-      m.position.set(lx, 1.05, lz);
-      m.rotation.y = ry;
-      this.root.add(m);
+      this.root.add(this.props.buildSuicaCoinLockerBank3D(lx, lz, ry));
     }
 
-    // 3. Anti-Glare Glowing JR East 『acure』 Drink Vending Machines across West Plaza, Metro Promenade, and Central Passage!
-    const vendFront = new THREE.MeshStandardMaterial({
-      color: 0x4c545c,
-      map: this.textures.vendingFront,
-      emissive: new THREE.Color(0xd2ebf6),
-      emissiveMap: this.textures.vendingFront,
-      emissiveIntensity: 0.64,
-      roughness: 0.72,
-      metalness: 0.08,
-    });
-    const vendSide = new THREE.MeshStandardMaterial({ color: 0x9aa2a8, roughness: 0.46, metalness: 0.38 });
-    const vendMats = [vendFront, vendSide, vendSide, vendSide, vendSide, vendSide];
+    // 3. Ultra-Precise 3D JR East 『acure』 Smart Vending Pairs (3D Bottles/Cans + Glass + See-Through Bin!)
     const addAcurePair = (x: number, z: number, rotY: number) => {
-      const vg = new THREE.Group();
-      vg.position.set(x, 0, z);
-      vg.rotation.y = rotY;
-      for (const dz of [-0.68, 0.68]) {
-        const vm = new THREE.Mesh(new THREE.BoxGeometry(0.84, 1.98, 1.26), vendMats);
-        vm.position.set(0, 0.99, dz);
-        vg.add(vm);
-      }
-      this.root.add(vg);
+      this.root.add(this.props.buildAcureVendingPair(x, z, rotY));
       this.addFloorGlowPool(x + Math.cos(rotY) * 1.1, z - Math.sin(rotY) * 1.1, 3.8, 3.8, 0x8cd2eb, 0.22);
     };
-    addAcurePair(4.44, 38.5, 0);          // 西口地下広場
+    addAcurePair(4.44, 38.5, 0);            // 西口地下広場
     addAcurePair(34.0, 15.54, Math.PI / 2); // メトロプロムナード
     addAcurePair(119.54, 54.0, Math.PI);    // JR改札内 1〜4番線横
     addAcurePair(135.54, 65.5, Math.PI);    // 東口地下広場・ルミネエスト連絡
 
-    // 4. Shinjuku Photo Booth (証明写真機) in Central Passage alcove (C10.5, R20.5) — triggers camera flash scare!
-    const pbGroup = new THREE.Group();
-    pbGroup.position.set(PHOTOBOOTH_POS.x, 0, PHOTOBOOTH_POS.z);
-    const pbShell = new THREE.Mesh(
-      new THREE.BoxGeometry(1.55, 2.25, 1.25),
-      new THREE.MeshStandardMaterial({ color: 0x1e2c38, roughness: 0.44, metalness: 0.48 })
-    );
-    pbShell.position.y = 1.125;
-    pbGroup.add(pbShell);
-
-    const pbHeader = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.42, 0.48),
-      new THREE.MeshStandardMaterial({
-        color: 0x485058,
-        map: this.textures.signPhotoBooth,
-        emissive: new THREE.Color(0x88dcf2),
-        emissiveMap: this.textures.signPhotoBooth,
-        emissiveIntensity: 0.72,
-        roughness: 0.72,
-      })
-    );
-    pbHeader.position.set(0, 1.96, -0.635);
-    pbHeader.rotation.y = Math.PI;
-    pbGroup.add(pbHeader);
-
-    const curtainMat = new THREE.MeshStandardMaterial({ color: 0x141a24, roughness: 0.92, side: THREE.DoubleSide });
-    const curtain = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 1.62), curtainMat);
-    curtain.position.set(0.22, 0.86, -0.64);
-    curtain.rotation.y = Math.PI;
-    pbGroup.add(curtain);
-
-    this.photoBoothShadowMesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.24, 0.34, 1.55, 10),
-      new THREE.MeshBasicMaterial({ color: 0x050208 })
-    );
-    this.photoBoothShadowMesh.position.set(-0.22, 0.85, -0.52);
-    this.photoBoothShadowMesh.visible = false;
-    pbGroup.add(this.photoBoothShadowMesh);
-
+    // 4. Ultra-Precise DNP 『Ki-Re-i』 証明写真機 (Pleated 3D Curtain, Ring-Flash Studio & Chrome Stool!)
+    const { group: pbGroup, shadowMesh } = this.props.buildKiReiPhotoBooth3D(PHOTOBOOTH_POS);
+    this.photoBoothShadowMesh = shadowMesh;
     this.addFloorGlowPool(PHOTOBOOTH_POS.x, PHOTOBOOTH_POS.z - 1.1, 3.2, 3.2, 0x6ac8e8, 0.24);
     this.root.add(pbGroup);
 
-    // 5. Waiting Bench inside gates between 13・14 and 11・12 stairs (C12.6, R13.5)
-    const benchMat = new THREE.MeshStandardMaterial({ color: 0x56544e, roughness: 0.68 });
-    const bench = new THREE.Group();
-    bench.position.set(12.6 * CELL, 0, 13.5 * CELL);
-    const seat = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 0.58), benchMat);
-    seat.position.y = 0.48;
-    const back = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.36, 0.06), benchMat);
-    back.position.set(0, 0.74, -0.26);
-    bench.add(seat, back);
-    for (const lx of [-1.0, 0, 1.0]) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.48, 0.5), darkMetal);
-      leg.position.set(lx, 0.24, 0);
-      bench.add(leg);
-    }
-    this.root.add(bench);
+    // 5. Authentic JR East Kotobuki Perforated Stainless Station Bench with Curved Divider Armrests!
+    this.root.add(this.props.buildKotobukiBench3D(12.6 * CELL, 13.5 * CELL, 0));
 
-    // 6. Midori-no-Madoguchi Interior Counter Desk & Monitors (inside R11 behind glass at C13..15)
+    // 6. Midori-no-Madoguchi Interior Counter Desk, Ticket Printers & CRT/LCD Monitors (inside R11 behind glass!)
     const desk = new THREE.Mesh(
       new THREE.BoxGeometry(2.4, 0.82, 0.9),
       new THREE.MeshStandardMaterial({ color: 0x68523e, roughness: 0.48 })
@@ -2395,29 +2008,20 @@ export class ShinjukuStation {
       roughness: 0.34,
     });
     for (const mx of [14.9 * CELL, 15.5 * CELL]) {
-      const box = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.32, 0.38), darkMetal);
-      box.position.set(mx, 0.96, 11.2 * CELL);
-      const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.24), monScreen);
-      scr.position.set(mx, 0.96, 11.2 * CELL - 0.2);
+      const stand = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.16), darkMetal);
+      stand.position.set(mx, 0.88, 11.2 * CELL);
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.32, 0.08), darkMetal);
+      box.position.set(mx, 1.04, 11.2 * CELL);
+      const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.26), monScreen);
+      scr.position.set(mx, 1.04, 11.2 * CELL - 0.045);
       scr.rotation.y = Math.PI;
-      this.root.add(box, scr);
+      const kb = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.025, 0.14), this.props.matteBlackMat);
+      kb.position.set(mx, 0.835, 11.2 * CELL - 0.24);
+      this.root.add(stand, box, scr, kb);
     }
 
-    // 7. NewDays 新宿（東口ルミネエスト連絡通路）Shuttered Storefront (C31 West wall = x=124.04m, R12..13 -> z=50m)
-    const newDays = new THREE.Mesh(
-      new THREE.PlaneGeometry(6.8, 2.85),
-      new THREE.MeshStandardMaterial({
-        map: this.textures.newDaysShutter,
-        emissive: new THREE.Color(0x82c288),
-        emissiveMap: this.textures.newDaysShutter,
-        emissiveIntensity: 0.16,
-        roughness: 0.52,
-        metalness: 0.48,
-      })
-    );
-    newDays.position.set(31.0 * CELL + 0.05, 1.44, 12.5 * CELL);
-    newDays.rotation.y = Math.PI / 2;
-    this.root.add(newDays);
+    // 7. Real 3D Recessed 『NewDays 新宿』 Storefront (Canopy, Pilasters, Shutter & Side Promo Lightbox!)
+    this.root.add(this.props.buildNewDaysStorefront3D(31.0 * CELL + 0.04, 12.5 * CELL, Math.PI / 2));
 
     // 8. Official JR Shinjuku Station B1F Guide Boards (構内案内図) mounted at key junctions!
     const mapMat = new THREE.MeshStandardMaterial({
@@ -2437,9 +2041,9 @@ export class ShinjukuStation {
       face.rotation.y = ry;
       this.root.add(frame, face);
     };
-    addWallMap(22.2 * CELL, 1.72, 6.0 * CELL + 0.06, 0);      // 東西自由通路・アルプス広場北壁
-    addWallMap(16.5 * CELL, 1.72, 19.0 * CELL - 0.06, Math.PI); // 中央通路中央
-    addWallMap(1.0 * CELL + 0.06, 1.72, 9.5 * CELL, Math.PI / 2); // 西口地下広場西壁
+    addWallMap(22.2 * CELL, 1.72, 6.0 * CELL + 0.06, 0);
+    addWallMap(16.5 * CELL, 1.72, 19.0 * CELL - 0.06, Math.PI);
+    addWallMap(1.0 * CELL + 0.06, 1.72, 11.2 * CELL, Math.PI / 2);
 
     // 9. Iconic Suspended Backlit Directional Signs (anti-glare matte backlit across ALL 6 wings!)
     const hangSign = (tex: THREE.CanvasTexture, x: number, z: number, y: number, ry: number, w = 3.4, h = 0.74) => {
@@ -2469,7 +2073,6 @@ export class ShinjukuStation {
       this.root.add(g);
     };
 
-    // Suspended signs along 東西自由通路, 西口地下広場, メトロプロムナード, 中央通路 & 1〜4番線!
     hangSign(this.textures.signEastExit, 88.0, 29.5, 3.65, Math.PI / 2, 3.7, 0.78);
     hangSign(this.textures.signWestPassage, 44.0, 29.5, 3.65, Math.PI / 2, 3.7, 0.78);
     hangSign(this.textures.signMidoriTicket, 54.0, 33.2, 3.35, Math.PI / 2, 2.35, 0.58);
@@ -2481,7 +2084,7 @@ export class ShinjukuStation {
     hangSign(this.textures.signMetroPromenade, 64.0, 70.0, 3.08, Math.PI / 2, 3.6, 0.74);
     hangSign(this.textures.signSaikyoShonan, 90.0, 70.0, 3.08, Math.PI / 2, 3.6, 0.74);
 
-    // 10. Wide 4-Column JR East Shinjuku LED Departure Board (発車標) in アルプス広場
+    // 10. Wide 4-Column JR East Shinjuku LED Departure Board (発車標) with Ceiling Suspension Rods & Glare Hood!
     const dep = createDepartureBoard();
     this.departureBoardTex = dep.texture;
     this.departureBoardCtx = dep.ctx;
@@ -2496,43 +2099,28 @@ export class ShinjukuStation {
     const depGroup = new THREE.Group();
     depGroup.position.set(100.0, 3.48, 31.0);
     depGroup.rotation.y = -Math.PI / 2;
-    const depBox = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.98, 0.2), darkMetal);
+    const depBox = new THREE.Mesh(new THREE.BoxGeometry(4.48, 1.02, 0.24), darkMetal);
+    const depHood = new THREE.Mesh(new THREE.BoxGeometry(4.54, 0.05, 0.34), this.props.steelMat);
+    depHood.position.y = 0.52;
     const depF1 = new THREE.Mesh(new THREE.PlaneGeometry(4.32, 0.9), depMat);
-    depF1.position.z = 0.105;
+    depF1.position.z = 0.125;
     const depF2 = new THREE.Mesh(new THREE.PlaneGeometry(4.32, 0.9), depMat);
-    depF2.position.z = -0.105;
+    depF2.position.z = -0.125;
     depF2.rotation.y = Math.PI;
-    depGroup.add(depBox, depF1, depF2);
+    for (const rx of [-1.75, 1.75]) {
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.88, 8), darkMetal);
+      rod.position.set(rx, 0.92, 0);
+      const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.025, 10), darkMetal);
+      plate.position.set(rx, 0.86, 0);
+      depGroup.add(rod, plate);
+    }
+    depGroup.add(depBox, depHood, depF1, depF2);
     this.root.add(depGroup);
 
-    // 11. Green-Frame Suspended JR Station Analog Clocks stopped at 00:47
-    const clockMat = new THREE.MeshStandardMaterial({
-      color: 0x525a50,
-      map: this.textures.clockFace,
-      emissive: new THREE.Color(0x9ec85e),
-      emissiveMap: this.textures.clockFace,
-      emissiveIntensity: 0.56,
-      roughness: 0.68,
-    });
-    const addJRClock = (x: number, y: number, z: number, ry: number) => {
-      const cg = new THREE.Group();
-      const box = new THREE.Mesh(
-        new THREE.BoxGeometry(0.68, 0.56, 0.14),
-        new THREE.MeshStandardMaterial({ color: 0x145e32, roughness: 0.44 })
-      );
-      const f1 = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.5), clockMat);
-      f1.position.z = 0.075;
-      const f2 = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.5), clockMat);
-      f2.position.z = -0.075;
-      f2.rotation.y = Math.PI;
-      cg.add(box, f1, f2);
-      cg.position.set(x, y, z);
-      cg.rotation.y = ry;
-      this.root.add(cg);
-    };
-    addJRClock(64.5, 3.68, 32.8, Math.PI / 2);
-    addJRClock(82.0, 3.15, 44.2, 0);
-    addJRClock(106.0, 3.12, 68.0, Math.PI / 2);
+    // 11. Ultra-Precise Green-Frame Suspended JR Station Analog Clocks with Real 3D Hands at 00:47!
+    this.root.add(this.props.buildJRStationClock3D(64.5, 3.68, 32.8, Math.PI / 2, HIGH_CEILING));
+    this.root.add(this.props.buildJRStationClock3D(82.0, 3.15, 44.2, 0, LOW_CEILING));
+    this.root.add(this.props.buildJRStationClock3D(106.0, 3.12, 68.0, Math.PI / 2, LOW_CEILING));
 
     // 12. Framed Station Posters across all wings
     const posters: Array<[number, number, number]> = [
@@ -2566,84 +2154,29 @@ export class ShinjukuStation {
   }
 
   private buildRealismClutter(): void {
-    const steel = new THREE.MeshStandardMaterial({
-      color: 0x8a929a,
-      normalMap: this.textures.brushedMetalNormal,
-      normalScale: new THREE.Vector2(0.45, 0.45),
-      roughness: 0.32,
-      metalness: 0.82,
-      envMapIntensity: 0.95,
-    });
-    const darkTrim = new THREE.MeshStandardMaterial({ color: 0x1b2024, roughness: 0.5, metalness: 0.36 });
-
-    for (const [bx, bz] of [
-      [41.5, 38.8], [72.0, 38.8], [16.5, 62.0], [56.0, 14.8], [108.0, 62.5], [128.0, 44.0],
+    // 1. Authentic JR East 3-Compartment Stainless + Clear-Window Recycling Trash Stations (flush along walls!)
+    for (const [bx, bz, bry] of [
+      [39.2, 39.72, Math.PI],
+      [74.2, 39.72, Math.PI],
+      [23.72, 62.5, -Math.PI / 2],
+      [56.0, 15.72, Math.PI],
+      [119.72, 60.5, -Math.PI / 2],
+      [124.28, 44.5, Math.PI / 2],
     ]) {
-      const bin = new THREE.Group();
-      bin.position.set(bx, 0, bz);
-      const b = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.84, 0.36), steel);
-      b.position.y = 0.42;
-      b.castShadow = true;
-      const top = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.14, 0.38), darkTrim);
-      top.position.y = 0.91;
-      const hole = new THREE.Mesh(new THREE.CircleGeometry(0.08, 12), darkTrim);
-      hole.position.set(0, 0.72, 0.185);
-      bin.add(b, top, hole);
-      this.root.add(bin);
+      this.root.add(this.props.buildStationTrashBin(bx, bz, bry));
     }
 
-    const wfMat = new THREE.MeshStandardMaterial({ map: this.textures.wetFloorSign, roughness: 0.48 });
-    const addWetSign = (x: number, z: number, ry: number, tipped: boolean) => {
-      const g = new THREE.Group();
-      const s1 = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.62, 0.03), wfMat);
-      s1.position.set(0, 0.31, 0.11);
-      s1.rotation.x = -0.22;
-      const s2 = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.62, 0.03), wfMat);
-      s2.position.set(0, 0.31, -0.11);
-      s2.rotation.x = 0.22;
-      g.add(s1, s2);
-      g.position.set(x, 0, z);
-      g.rotation.y = ry;
-      if (tipped) {
-        g.rotation.z = Math.PI / 2 - 0.12;
-        g.position.y = 0.18;
-      }
-      this.root.add(g);
-    };
-    addWetSign(96.5, 31.8, 0.42, false);
-    addWetSign(18.5, 36.2, -0.7, true);
-    addWetSign(93.8, 79.2, 0.25, false);
+    // 2. Molded Yellow Folding 『足元注意』 Wet-Floor Signs
+    this.root.add(this.props.buildWetFloorSign3D(96.5, 31.8, 0.42, false));
+    this.root.add(this.props.buildWetFloorSign3D(18.5, 36.2, -0.7, true));
+    this.root.add(this.props.buildWetFloorSign3D(93.8, 79.2, 0.25, false));
 
-    // Midnight Shinjuku 『終電終了・立入禁止』 Folding Safety Barricades
-    const barricadeMat = new THREE.MeshStandardMaterial({
-      map: this.textures.barricadePanel,
-      roughness: 0.48,
-      metalness: 0.14,
-    });
-    const addBarricade = (x: number, z: number, ry: number) => {
-      const bg = new THREE.Group();
-      bg.position.set(x, 0, z);
-      bg.rotation.y = ry;
-      const panel = new THREE.Mesh(new THREE.BoxGeometry(1.56, 0.78, 0.05), barricadeMat);
-      panel.position.y = 0.56;
-      panel.castShadow = true;
-      bg.add(panel);
-      for (const lx of [-0.68, 0.68]) {
-        const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.94, 6), steel);
-        leg1.position.set(lx, 0.46, 0.12);
-        leg1.rotation.x = -0.22;
-        const leg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.94, 6), steel);
-        leg2.position.set(lx, 0.46, -0.12);
-        leg2.rotation.x = 0.22;
-        bg.add(leg1, leg2);
-      }
-      this.root.add(bg);
-    };
-    addBarricade(6.5, 5.2, 0.16);
-    addBarricade(128.0, 5.4, -0.24);
-    addBarricade(66.0, 78.6, 0.05);
+    // 3. Midnight Shinjuku 『終電終了・立入禁止』 Folding Safety Barricades with Amber Beacons!
+    this.root.add(this.props.buildSafetyBarricade3D(6.5, 5.2, 0.16));
+    this.root.add(this.props.buildSafetyBarricade3D(128.0, 5.4, -0.24));
+    this.root.add(this.props.buildSafetyBarricade3D(66.0, 78.6, 0.05));
 
-    // Wall-mounted Japanese Station Fire Alarm Call Boxes (火災報知機) with glowing red pilot lamps!
+    // 4. Wall-mounted Japanese Station Fire Alarm Call Boxes (火災報知機) with 3D Push-Button Bezel & Red Pilot Lamp!
     const alarmMat = new THREE.MeshStandardMaterial({
       map: this.textures.fireAlarmBox,
       emissive: new THREE.Color(0x6e1014),
@@ -2652,6 +2185,7 @@ export class ShinjukuStation {
       roughness: 0.36,
     });
     const alarmLampMat = new THREE.MeshBasicMaterial({ color: 0xff2824 });
+    const alarmRedMat = new THREE.MeshStandardMaterial({ color: 0xaa181c, roughness: 0.36, metalness: 0.4 });
     for (const [ax, az, ary] of [
       [35.2, 24.08, 0],
       [82.8, 24.08, 0],
@@ -2663,57 +2197,37 @@ export class ShinjukuStation {
       const ag = new THREE.Group();
       ag.position.set(ax, 1.38, az);
       ag.rotation.y = ary;
-      const abox = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.44, 0.06), alarmMat);
-      const alamp = new THREE.Mesh(new THREE.SphereGeometry(0.026, 8, 8), alarmLampMat);
-      alamp.position.set(0, 0.13, 0.036);
-      ag.add(abox, alamp);
+      const abox = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.46, 0.06), alarmMat);
+      const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.036, 0.02, 10), this.props.chromeMat);
+      collar.rotation.x = Math.PI / 2;
+      collar.position.set(0, 0.135, 0.032);
+      const alamp = new THREE.Mesh(new THREE.SphereGeometry(0.025, 10, 8), alarmLampMat);
+      alamp.position.set(0, 0.135, 0.044);
+      const pushRing = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.062, 0.028, 14), alarmRedMat);
+      pushRing.rotation.x = Math.PI / 2;
+      pushRing.position.set(0, -0.05, 0.034);
+      const pushGlass = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.044, 0.01, 12), this.props.clearGlassMat);
+      pushGlass.rotation.x = Math.PI / 2;
+      pushGlass.position.set(0, -0.05, 0.05);
+      ag.add(abox, collar, alamp, pushRing, pushGlass);
       this.root.add(ag);
     }
 
-    // Abandoned Commuter Clear Vinyl Umbrella (ビニール傘) resting beside a wet puddle in 東西自由通路 & 西口地下広場!
-    const canopyMat = new THREE.MeshPhysicalMaterial({
-      color: 0xdce6ea,
-      transparent: true,
-      opacity: 0.36,
-      roughness: 0.14,
+    // 5. Ultra-Detailed Abandoned Commuter Clear Vinyl Umbrellas (8 Internal Wireframe Ribs & J-Handle!)
+    this.root.add(this.props.buildVinylUmbrella3D(91.5, 29.2, 0.85));
+    this.root.add(this.props.buildVinylUmbrella3D(14.8, 33.4, -0.65));
+
+    // 6. Detailed Forgotten Black Leather Commuter Briefcase beside the inside-gate waiting bench!
+    this.root.add(this.props.buildBriefcase3D(12.6 * CELL + 1.55, 13.5 * CELL + 0.12, -0.38));
+
+    // 7. Scattered Dropped JR Green Paper Tickets & Folded Midnight Newspapers
+    const ticketMat = new THREE.MeshStandardMaterial({ color: 0x6ac48a, roughness: 0.72, side: THREE.DoubleSide });
+    const paperMat = new THREE.MeshStandardMaterial({
+      map: this.textures.loreNotePaper,
+      color: 0xd0ccc0,
+      roughness: 0.88,
       side: THREE.DoubleSide,
     });
-    const addUmbrella = (ux: number, uz: number, rotY: number) => {
-      const umbGroup = new THREE.Group();
-      umbGroup.position.set(ux, 0.14, uz);
-      umbGroup.rotation.set(0.08, rotY, Math.PI * 0.47);
-      const canopy = new THREE.Mesh(new THREE.ConeGeometry(0.46, 0.36, 8, 1, true), canopyMat);
-      canopy.position.y = 0.24;
-      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.82, 6), steel);
-      shaft.position.y = -0.05;
-      const handle = new THREE.Mesh(
-        new THREE.TorusGeometry(0.05, 0.012, 6, 10, Math.PI),
-        new THREE.MeshStandardMaterial({ color: 0xdedbd4, roughness: 0.5 })
-      );
-      handle.position.set(0.05, -0.46, 0);
-      handle.rotation.z = Math.PI;
-      umbGroup.add(canopy, shaft, handle);
-      this.root.add(umbGroup);
-    };
-    addUmbrella(91.5, 29.2, 0.85);
-    addUmbrella(14.8, 33.4, -0.65);
-
-    // Forgotten Black Leather Commuter Briefcase beside the inside-gate waiting bench!
-    const bagGroup = new THREE.Group();
-    bagGroup.position.set(12.6 * CELL + 1.55, 0.2, 13.5 * CELL + 0.12);
-    bagGroup.rotation.y = -0.38;
-    const leatherMat = new THREE.MeshStandardMaterial({ color: 0x18171a, roughness: 0.52, metalness: 0.12 });
-    const bagBody = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.32, 0.12), leatherMat);
-    const bagHandle = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.012, 6, 10, Math.PI), leatherMat);
-    bagHandle.position.y = 0.16;
-    const bagClasp = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.13), steel);
-    bagClasp.position.y = 0.04;
-    bagGroup.add(bagBody, bagHandle, bagClasp);
-    this.root.add(bagGroup);
-
-    // Scattered Dropped JR Green Paper Tickets & Folded Midnight Newspapers
-    const ticketMat = new THREE.MeshStandardMaterial({ color: 0x6ac48a, roughness: 0.72, side: THREE.DoubleSide });
-    const paperMat = new THREE.MeshStandardMaterial({ color: 0xd4d0c4, roughness: 0.88, side: THREE.DoubleSide });
     for (const [tx, tz, tr] of [
       [34.8, 37.6, 0.5], [35.4, 38.2, -0.9], [66.2, 30.6, 1.2], [86.2, 30.2, -0.4],
       [94.2, 78.4, 0.7], [46.0, 12.2, -0.5], [14.2, 62.4, 0.9],
@@ -2734,7 +2248,7 @@ export class ShinjukuStation {
       this.root.add(np);
     }
 
-    // Claw drag marks on dark lower corridor walls!
+    // 8. Claw drag marks on dark lower corridor walls!
     const clawMat = new THREE.MeshStandardMaterial({
       map: this.textures.clawDragDecal,
       transparent: true,
@@ -2753,7 +2267,7 @@ export class ShinjukuStation {
       this.root.add(cm);
     }
 
-    // Wet Reflective Puddles across all 6 wings (including West Plaza rotary rain puddle & N'EX dripping pipe!)
+    // 9. Wet Reflective Puddles across all 6 wings
     const puddleMat = new THREE.MeshPhysicalMaterial({
       color: 0x141d24,
       alphaMap: this.textures.puddleAlpha,
@@ -2771,13 +2285,13 @@ export class ShinjukuStation {
     const dropGeo = new THREE.CylinderGeometry(0.005, 0.009, 0.11, 5);
 
     const puddleDefs: Array<[number, number, number, number, number]> = [
-      [14.2, 34.0, 2.8, 2.2, PLAZA_CEILING], // West Plaza Rotary Rain Puddle!
+      [14.2, 34.0, 2.8, 2.2, PLAZA_CEILING],
       [62.5, 28.6, 1.9, 1.35, HIGH_CEILING],
       [92.2, 30.2, 1.85, 1.3, HIGH_CEILING],
-      [48.0, 12.2, 1.8, 1.15, LOW_CEILING],  // Metro Promenade
-      [50.2, 54.6, 2.0, 1.2, LOW_CEILING],   // Inside Gates 13・14
-      [94.0, 82.4, 1.7, 1.2, LOW_CEILING],   // 5・6番線 N'EX Tunnel Drip!
-      [112.0, 68.4, 1.8, 1.2, LOW_CEILING],  // Central Passage East
+      [48.0, 12.2, 1.8, 1.15, LOW_CEILING],
+      [50.2, 54.6, 2.0, 1.2, LOW_CEILING],
+      [94.0, 82.4, 1.7, 1.2, LOW_CEILING],
+      [112.0, 68.4, 1.8, 1.2, LOW_CEILING],
     ];
     puddleDefs.forEach(([px, pz, rx, rz, ceilH], idx) => {
       const pm = new THREE.Mesh(new THREE.PlaneGeometry(rx * 2.2, rz * 2.2), puddleMat);
@@ -2819,16 +2333,7 @@ export class ShinjukuStation {
       });
     });
 
-    // Fire Hydrant Cabinets (消火栓)
-    const hydMat = new THREE.MeshStandardMaterial({
-      map: this.textures.fireHydrant,
-      normalMap: this.textures.brushedMetalNormal,
-      normalScale: new THREE.Vector2(0.25, 0.25),
-      roughness: 0.36,
-      metalness: 0.55,
-    });
-    const hydSide = new THREE.MeshStandardMaterial({ color: 0x6e181b, roughness: 0.42, metalness: 0.62 });
-    const hydLamp = new THREE.MeshBasicMaterial({ color: 0xff2824 });
+    // 10. Ultra-Precise Japanese 『屋内消火栓 総合盤』 Fire Hydrant Cabinets (3D Φ150 Bell, Ruby Lamp, Transmitter!)
     for (const [hx, hz, ry] of [
       [28.08, 52.0, Math.PI / 2],
       [119.92, 56.0, -Math.PI / 2],
@@ -2836,19 +2341,10 @@ export class ShinjukuStation {
       [4.08, 32.0, Math.PI / 2],
       [78.0, 15.92, Math.PI],
     ]) {
-      const hg = new THREE.Group();
-      hg.position.set(hx, 1.16, hz);
-      hg.rotation.y = ry;
-      const box = new THREE.Mesh(new THREE.BoxGeometry(0.68, 1.44, 0.14), hydSide);
-      const front = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 1.42), hydMat);
-      front.position.z = 0.072;
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.044, 10, 10), hydLamp);
-      lamp.position.set(-0.12, 0.48, 0.088);
-      hg.add(box, front, lamp);
-      this.root.add(hg);
+      this.root.add(this.props.buildFireHydrantCabinet3D(hx, hz, ry));
     }
 
-    // Floor inspection hatches & drainage grates
+    // 11. Floor inspection hatches & drainage grates
     const grateMat = new THREE.MeshStandardMaterial({
       map: this.textures.floorGrate,
       normalMap: this.textures.floorGrateNormal,
@@ -2871,7 +2367,7 @@ export class ShinjukuStation {
       this.root.add(gm);
     }
 
-    // Tracking Security CCTV Cameras across all wings!
+    // 12. Ultra-Precise Tracking Security CCTV Cameras across all wings!
     const camPositions: Array<[number, number, number]> = [
       [50.0, HIGH_CEILING - 0.32, 32.2],
       [82.0, HIGH_CEILING - 0.32, 32.2],
@@ -2881,27 +2377,12 @@ export class ShinjukuStation {
       [104.0, LOW_CEILING - 0.3, 68.5],
     ];
     camPositions.forEach(([cx, cy, cz], idx) => {
-      const mount = new THREE.Group();
-      mount.position.set(cx, cy, cz);
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.32, 8), darkTrim);
-      stem.position.y = 0.16;
-      mount.add(stem);
-
-      const head = new THREE.Group();
-      const camBody = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.28), steel);
-      const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, 0.08, 12), darkTrim);
-      lens.rotation.x = Math.PI / 2;
-      lens.position.z = 0.16;
-      const ledMat = new THREE.MeshBasicMaterial({ color: 0xff2222 });
-      const led = new THREE.Mesh(new THREE.SphereGeometry(0.017, 6, 6), ledMat);
-      led.position.set(0.045, 0.035, 0.145);
-      head.add(camBody, lens, led);
-      mount.add(head);
+      const { mount, headPivot, ledMat } = this.props.buildSecurityCamera3D(cx, cy, cz);
       this.root.add(mount);
-      this.cctvCameras.push({ headPivot: head, ledMat, worldX: cx, worldZ: cz, phase: idx * 1.4 });
+      this.cctvCameras.push({ headPivot, ledMat, worldX: cx, worldZ: cz, phase: idx * 1.4 });
     });
 
-    // Subtle horror warning graffiti in back corridors
+    // 13. Subtle horror warning graffiti in back corridors
     const g1 = new THREE.Mesh(
       new THREE.PlaneGeometry(2.6, 1.3),
       new THREE.MeshStandardMaterial({
@@ -2931,17 +2412,17 @@ export class ShinjukuStation {
 
   private buildNotesAndCoins(): void {
     const noteGeo = new THREE.PlaneGeometry(0.28, 0.36);
+    const noteMat = new THREE.MeshStandardMaterial({
+      color: 0xeae4d6,
+      map: this.textures.loreNotePaper,
+      emissive: new THREE.Color(0x463d2c),
+      emissiveMap: this.textures.loreNotePaper,
+      emissiveIntensity: 0.55,
+      roughness: 0.85,
+      side: THREE.DoubleSide,
+    });
     for (const def of LORE_NOTES) {
-      const m = new THREE.Mesh(
-        noteGeo,
-        new THREE.MeshStandardMaterial({
-          color: 0xf4eee0,
-          emissive: new THREE.Color(0x463d2c),
-          emissiveIntensity: 0.65,
-          roughness: 0.85,
-          side: THREE.DoubleSide,
-        })
-      );
+      const m = new THREE.Mesh(noteGeo, noteMat);
       m.position.set(def.x, def.y, def.z);
       if (def.vertical) {
         m.rotation.y = def.rotY;
@@ -2953,16 +2434,24 @@ export class ShinjukuStation {
       this.notes.push({ def, mesh: m, read: false });
     }
 
-    const coinGeo = new THREE.CylinderGeometry(0.088, 0.088, 0.02, 16);
-    const coinMat = new THREE.MeshStandardMaterial({
-      color: 0xeaeef2,
-      emissive: new THREE.Color(0x525864),
-      emissiveIntensity: 0.72,
-      roughness: 0.14,
-      metalness: 0.96,
+    const coinGeo = new THREE.CylinderGeometry(0.088, 0.088, 0.022, 20);
+    const coinEdgeMat = new THREE.MeshStandardMaterial({
+      color: 0xd0d6dc,
+      roughness: 0.22,
+      metalness: 0.94,
     });
+    const coinFaceMat = new THREE.MeshStandardMaterial({
+      color: 0xe6ecf0,
+      map: this.textures.coin100Yen,
+      emissive: new THREE.Color(0x525a64),
+      emissiveMap: this.textures.coin100Yen,
+      emissiveIntensity: 0.62,
+      roughness: 0.16,
+      metalness: 0.92,
+    });
+    const coinMats = [coinEdgeMat, coinFaceMat, coinFaceMat];
     for (const def of COINS) {
-      const m = new THREE.Mesh(coinGeo, coinMat);
+      const m = new THREE.Mesh(coinGeo, coinMats);
       m.position.set(def.x, def.y, def.z);
       this.root.add(m);
       this.coinPickups.push({ def, mesh: m, collected: false });

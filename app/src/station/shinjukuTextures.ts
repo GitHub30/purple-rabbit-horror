@@ -160,6 +160,18 @@ export interface ShinjukuTextureSet {
   puddleAlpha: THREE.CanvasTexture;
   rippleRing: THREE.CanvasTexture;
   lightShaftSoft: THREE.CanvasTexture;
+  suicaTouchPad: THREE.CanvasTexture;
+  gateMiniLcd: THREE.CanvasTexture;
+  mv50Header: THREE.CanvasTexture;
+  ev20Screen: THREE.CanvasTexture;
+  fareAdjustScreen: THREE.CanvasTexture;
+  acureCanopy: THREE.CanvasTexture;
+  trashBinLabels: THREE.CanvasTexture;
+  payphoneFace: THREE.CanvasTexture;
+  suicaLockerTouch: THREE.CanvasTexture;
+  kiReiSidePanel: THREE.CanvasTexture;
+  coin100Yen: THREE.CanvasTexture;
+  loreNotePaper: THREE.CanvasTexture;
 }
 
 export function createShinjukuTextures(): ShinjukuTextureSet {
@@ -304,6 +316,18 @@ export function createShinjukuTextures(): ShinjukuTextureSet {
     puddleAlpha: buildPuddleAlpha(),
     rippleRing: buildRippleRing(),
     lightShaftSoft: buildSoftLightShaft(),
+    suicaTouchPad: buildSuicaTouchPad(),
+    gateMiniLcd: buildGateMiniLcd(),
+    mv50Header: buildMV50Header(),
+    ev20Screen: buildEV20Screen(),
+    fareAdjustScreen: buildFareAdjustScreen(),
+    acureCanopy: buildAcureCanopy(),
+    trashBinLabels: buildTrashBinLabels(),
+    payphoneFace: buildPayphoneFace(),
+    suicaLockerTouch: buildSuicaLockerTouch(),
+    kiReiSidePanel: buildKiReiSidePanel(),
+    coin100Yen: buildCoin100Yen(),
+    loreNotePaper: buildLoreNotePaper(),
   };
 }
 
@@ -2991,6 +3015,515 @@ function buildSouthExitHeader(): THREE.CanvasTexture {
   ctx.fillStyle = '#e86858';
   ctx.font = '700 24px sans-serif';
   ctx.fillText('South Exit · Busta Shinjuku — 終電後シャッター閉鎖中（東口非常出口へ）', 512, 126);
+  return toTex(c, 1, 1, true);
+}
+
+// 1. Authentic JR East EG20/EG21 Glowing Cyan-Blue 『IC』 Suica Touch Pad
+function buildSuicaTouchPad(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 256);
+  ctx.fillStyle = '#0d2230';
+  ctx.fillRect(0, 0, 256, 256);
+
+  const grad = ctx.createRadialGradient(128, 128, 12, 128, 128, 118);
+  grad.addColorStop(0, '#58e2ff');
+  grad.addColorStop(0.55, '#1988c4');
+  grad.addColorStop(1, '#0c3b62');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.roundRect(14, 14, 228, 228, 22);
+  ctx.fill();
+
+  ctx.strokeStyle = '#9cf2ff';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.roundRect(22, 22, 212, 212, 18);
+  ctx.stroke();
+
+  // Concentric contactless NFC wave rings
+  ctx.strokeStyle = 'rgba(220, 252, 255, 0.52)';
+  ctx.lineWidth = 4;
+  for (const r of [56, 78, 96]) {
+    ctx.beginPath();
+    ctx.arc(128, 122, r, -Math.PI * 0.78, -Math.PI * 0.22);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(128, 122, r, Math.PI * 0.22, Math.PI * 0.78);
+    ctx.stroke();
+  }
+
+  // Iconic bold JR East "IC" emblem
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = '900 84px sans-serif';
+  ctx.fillText('IC', 128, 150);
+  ctx.font = '800 22px sans-serif';
+  ctx.fillStyle = '#d8f8ff';
+  ctx.fillText('Suica / PASMO タッチ', 128, 210);
+  return toTex(c, 1, 1, true);
+}
+
+// 2. Authentic EG20/EG21 Top Residual-Balance Mini LCD Window
+function buildGateMiniLcd(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 96);
+  ctx.fillStyle = '#091410';
+  ctx.fillRect(0, 0, 256, 96);
+  ctx.strokeStyle = '#263830';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(4, 4, 248, 88);
+
+  ctx.fillStyle = '#38d688';
+  ctx.font = 'bold 24px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Suica OK', 18, 38);
+  ctx.fillStyle = '#a8f8c4';
+  ctx.font = 'bold 28px monospace';
+  ctx.fillText('残額 ¥----', 18, 76);
+  return toTex(c, 1, 1, true);
+}
+
+// 3. Authentic JR East Black/Purple 『指定席券売機 MV50』 Canopy Header
+function buildMV50Header(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 256);
+  ctx.fillStyle = '#181a20';
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Iconic JR East Reserved Seat Machine violet-magenta & emerald header bars
+  ctx.fillStyle = '#5a2e82';
+  ctx.fillRect(0, 0, 512, 24);
+  ctx.fillStyle = '#0f743c';
+  ctx.fillRect(0, 236, 512, 20);
+
+  // JR logo + Reserved Seat icon box
+  ctx.fillStyle = '#0f743c';
+  ctx.fillRect(20, 42, 82, 54);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'italic 900 36px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('JR', 61, 82);
+
+  ctx.fillStyle = '#7e3cb0';
+  ctx.fillRect(114, 42, 118, 54);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 22px sans-serif';
+  ctx.fillText('指定席', 173, 77);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.font = '900 44px sans-serif';
+  ctx.fillText('指定席券売機', 244, 86);
+
+  ctx.fillStyle = '#d4d8e2';
+  ctx.font = '700 22px sans-serif';
+  ctx.fillText('Reserved Seat Ticket Vending Machine', 24, 140);
+
+  // Credit / IC / えきねっと badges
+  const badges: Array<[string, string, number]> = [
+    ['新幹線', '#0e7442', 24],
+    ['特急券', '#1c6ab8', 124],
+    ['えきねっと', '#6e329e', 224],
+    ['Suica/QR', '#0c8882', 368],
+  ];
+  for (const [label, col, bx] of badges) {
+    ctx.fillStyle = col;
+    ctx.fillRect(bx, 166, label.length > 4 ? 126 : 90, 44);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText(label, bx + (label.length > 4 ? 63 : 45), 196);
+  }
+  return toTex(c, 1, 1, true);
+}
+
+// 4. Authentic JR East EV20 / MV50 Touchscreen UI (Crisp Anti-Glare Menu)
+function buildEV20Screen(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 384);
+  ctx.fillStyle = '#d6e2dc';
+  ctx.fillRect(0, 0, 512, 384);
+
+  // Green JR East top title strip
+  ctx.fillStyle = '#126e3a';
+  ctx.fillRect(0, 0, 512, 56);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 24px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('JR東日本  いらっしゃいませ  新宿駅', 18, 37);
+
+  // Authentic JR touchscreen tile grid
+  const tiles: Array<[number, number, number, number, string, string, string]> = [
+    [18, 72, 232, 86, '#148448', 'きっぷ・近距離', 'Tickets'],
+    [262, 72, 232, 86, '#108892', 'Suica チャージ', 'IC Card Charge'],
+    [18, 172, 232, 86, '#1c62a6', '新幹線・特急券', 'Shinkansen / Ltd Exp'],
+    [262, 172, 232, 86, '#623494', '定期券・えきねっと', 'Commuter / Pickup'],
+  ];
+  for (const [x, y, w, h, col, jp, en] of tiles) {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText(jp, x + w * 0.5, y + 40);
+    ctx.font = '600 16px sans-serif';
+    ctx.fillStyle = '#e0f4ec';
+    ctx.fillText(en, x + w * 0.5, y + 68);
+  }
+
+  // Bottom status bar (00:47 last train ended warning)
+  ctx.fillStyle = '#1c2428';
+  ctx.fillRect(18, 278, 476, 86);
+  ctx.fillStyle = '#f2c848';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.fillText('本日の営業は終了しました (00:47)', 256, 314);
+  ctx.fillStyle = '#98c4b4';
+  ctx.font = '600 18px sans-serif';
+  ctx.fillText('ENGLISH / 中文 / 한국어  |  Suica残高照会のみ可', 256, 346);
+  return toTex(c, 1, 1, true);
+}
+
+// 5. Authentic JR East Golden-Yellow 『のりこし精算機』 Touchscreen UI
+function buildFareAdjustScreen(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 384);
+  ctx.fillStyle = '#eee6c6';
+  ctx.fillRect(0, 0, 512, 384);
+
+  ctx.fillStyle = '#c89212';
+  ctx.fillRect(0, 0, 512, 60);
+  ctx.fillStyle = '#141618';
+  ctx.font = '900 28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('のりこし精算機  Fare Adjustment', 256, 40);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(24, 82, 464, 178);
+  ctx.strokeStyle = '#c89212';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(24, 82, 464, 178);
+
+  ctx.fillStyle = '#182024';
+  ctx.font = 'bold 26px sans-serif';
+  ctx.fillText('きっぷ・Suicaを入れてください', 256, 138);
+  ctx.fillStyle = '#147a44';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.fillText('Insert Ticket or Place IC Card on Tray', 256, 184);
+  ctx.fillStyle = '#b42828';
+  ctx.font = 'bold 20px monospace';
+  ctx.fillText('新宿駅 00:47 — 精算待機中', 256, 232);
+
+  // Bottom buttons
+  ctx.fillStyle = '#16748a';
+  ctx.fillRect(24, 282, 222, 76);
+  ctx.fillStyle = '#146e3c';
+  ctx.fillRect(266, 282, 222, 76);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 24px sans-serif';
+  ctx.fillText('Suicaチャージ', 135, 328);
+  ctx.fillText('領収書発行', 377, 328);
+  return toTex(c, 1, 1, true);
+}
+
+// 6. Authentic JR East 『acure <アキュア>』 Smart Vending Machine Header Canopy
+function buildAcureCanopy(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 160);
+  const grad = ctx.createLinearGradient(0, 0, 512, 0);
+  grad.addColorStop(0, '#0a3a6a');
+  grad.addColorStop(0.5, '#125a9c');
+  grad.addColorStop(1, '#08325c');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 160);
+
+  ctx.fillStyle = '#5ad4ff';
+  ctx.fillRect(0, 144, 512, 16);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.font = 'italic 900 72px sans-serif';
+  ctx.fillText('acure', 32, 96);
+
+  ctx.fillStyle = '#9ae6ff';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText('JR東日本エキナカ自販機', 34, 128);
+
+  // Suica / JRE POINT badge right side
+  ctx.fillStyle = '#148448';
+  ctx.beginPath();
+  ctx.roundRect(306, 28, 180, 46, 8);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 24px sans-serif';
+  ctx.fillText('Suica / PASMO', 396, 60);
+
+  ctx.fillStyle = '#e8b620';
+  ctx.beginPath();
+  ctx.roundRect(306, 84, 180, 38, 6);
+  ctx.fill();
+  ctx.fillStyle = '#161a1e';
+  ctx.font = 'bold 19px sans-serif';
+  ctx.fillText('JRE POINT OK', 396, 110);
+  return toTex(c, 1, 1, true);
+}
+
+// 7. Authentic JR East 3-Compartment Station Recycling Bin Header Graphics
+function buildTrashBinLabels(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(768, 192);
+  ctx.fillStyle = '#d4d8dc';
+  ctx.fillRect(0, 0, 768, 192);
+
+  const panels: Array<[number, string, string, string, string]> = [
+    [0, '#148046', 'びん・かん・PET', 'Bottles & Cans', '●  ●'],
+    [256, '#1a68b2', '新聞・雑誌', 'Newspapers', '━━━'],
+    [512, '#d45a1a', 'もえるゴミ', 'Other Trash', '■'],
+  ];
+  for (const [x, col, jp, en, sym] of panels) {
+    ctx.fillStyle = col;
+    ctx.fillRect(x + 8, 8, 240, 176);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(x + 14, 14, 228, 164);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.font = '900 28px sans-serif';
+    ctx.fillText(jp, x + 128, 64);
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillStyle = '#e8f4ee';
+    ctx.fillText(en, x + 128, 102);
+    ctx.font = 'bold 34px sans-serif';
+    ctx.fillText(sym, x + 128, 154);
+  }
+  return toTex(c, 1, 1, true);
+}
+
+// 8. Authentic NTT East 『MC-D8』 Green Public Payphone Front Faceplate
+function buildPayphoneFace(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 384);
+  ctx.fillStyle = '#187c44';
+  ctx.fillRect(0, 0, 256, 384);
+
+  // Dark upper fascia & green backlit LCD
+  ctx.fillStyle = '#141a18';
+  ctx.fillRect(16, 16, 224, 96);
+  ctx.fillStyle = '#7ea678';
+  ctx.fillRect(28, 28, 200, 56);
+  ctx.fillStyle = '#102412';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('10円・100円 / CARD', 128, 52);
+  ctx.font = 'bold 15px monospace';
+  ctx.fillText('00:47  CALL WAIT', 128, 74);
+
+  // NTT東日本 header strip
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('NTT東日本  公衆電話 MC-D8', 128, 106);
+
+  // Coin & Card labels
+  ctx.fillStyle = '#0e522c';
+  ctx.fillRect(18, 126, 104, 52);
+  ctx.fillRect(134, 126, 104, 52);
+  ctx.fillStyle = '#e8f4ec';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText('10円 / 100円', 70, 152);
+  ctx.fillText('硬貨投入口', 70, 170);
+  ctx.fillText('テレホンカード', 186, 152);
+  ctx.fillText('CARD SLOT', 186, 170);
+
+  // Emergency 110 / 119 red box
+  ctx.fillStyle = '#c81c24';
+  ctx.fillRect(18, 304, 104, 62);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('緊急通報', 70, 330);
+  ctx.font = 'bold 15px monospace';
+  ctx.fillText('110 / 119', 70, 354);
+
+  // Coin return tray area
+  ctx.fillStyle = '#18201c';
+  ctx.fillRect(134, 304, 104, 62);
+  ctx.fillStyle = '#9aa8a0';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText('返却口', 186, 340);
+  return toTex(c, 1, 1, true);
+}
+
+// 9. Authentic JR East 『Suica コインロッカー』 Central Touch-Screen Terminal UI
+function buildSuicaLockerTouch(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 384);
+  ctx.fillStyle = '#141a20';
+  ctx.fillRect(0, 0, 256, 384);
+
+  // Yellow & JR Green top banner
+  ctx.fillStyle = '#e6b818';
+  ctx.fillRect(0, 0, 256, 62);
+  ctx.fillStyle = '#121618';
+  ctx.textAlign = 'center';
+  ctx.font = '900 22px sans-serif';
+  ctx.fillText('Suica コインロッカー', 128, 30);
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText('IC CARD LOCKER  ¥400〜¥700', 128, 52);
+
+  // Screen interior
+  ctx.fillStyle = '#1b2b36';
+  ctx.fillRect(16, 76, 224, 198);
+  ctx.fillStyle = '#148448';
+  ctx.fillRect(28, 92, 200, 68);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 24px sans-serif';
+  ctx.fillText('あずける Deposit', 128, 134);
+
+  ctx.fillStyle = '#1c6ab8';
+  ctx.fillRect(28, 176, 200, 68);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('とりだす Pickup', 128, 218);
+
+  // Language & IC card indicator footer
+  ctx.fillStyle = '#202830';
+  ctx.fillRect(16, 290, 224, 78);
+  ctx.fillStyle = '#5ad8f0';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('ICカードをタッチしてください', 128, 322);
+  ctx.fillStyle = '#b0bec6';
+  ctx.font = '600 13px sans-serif';
+  ctx.fillText('JP / EN / 中文 / 한국어', 128, 350);
+  return toTex(c, 1, 1, true);
+}
+
+// 10. Authentic DNP 『Ki-Re-i』 Exterior Illuminated Guide & Price Panel
+function buildKiReiSidePanel(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 512);
+  const grad = ctx.createLinearGradient(0, 0, 0, 512);
+  grad.addColorStop(0, '#0f5c9c');
+  grad.addColorStop(0.35, '#1b84c8');
+  grad.addColorStop(1, '#e6f0f8');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 256, 512);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = 'italic 900 44px sans-serif';
+  ctx.fillText('Ki-Re-i', 128, 68);
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText('キレイな証明写真', 128, 102);
+
+  // Sample photo cards
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(26, 128, 204, 152);
+  for (let i = 0; i < 3; i++) {
+    const px = 38 + i * 64;
+    ctx.fillStyle = i === 1 ? '#68b4e4' : '#8ac8ec';
+    ctx.fillRect(px, 142, 52, 70);
+    // Silhouette head & shoulders
+    ctx.fillStyle = '#263442';
+    ctx.beginPath();
+    ctx.arc(px + 26, 166, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(px + 26, 200, 18, 14, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#124e82';
+  ctx.font = 'bold 17px sans-serif';
+  ctx.fillText('美肌+ / スマホデータ保存', 128, 248);
+  ctx.fillStyle = '#d42c44';
+  ctx.font = '900 22px sans-serif';
+  ctx.fillText('通常 ¥900 / EX ¥1,000', 128, 274);
+
+  // Use cases list
+  const items = ['履歴書 (40×30mm)', 'マイナンバー (45×35mm)', 'パスポート (45×35mm)', '運転免許 (30×24mm)'];
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#122436';
+  ctx.font = 'bold 17px sans-serif';
+  items.forEach((t, idx) => {
+    ctx.fillText(`• ${t}`, 24, 326 + idx * 36);
+  });
+  ctx.fillStyle = '#0f5c9c';
+  ctx.fillRect(20, 464, 216, 32);
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('写真取出口 ↓  PHOTO OUT', 128, 486);
+  return toTex(c, 1, 1, true);
+}
+
+// 11. Authentic Japanese ¥100 Cupronickel Sakura Coin Face
+function buildCoin100Yen(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 256);
+  ctx.fillStyle = '#c8ced4';
+  ctx.fillRect(0, 0, 256, 256);
+
+  const grad = ctx.createRadialGradient(116, 112, 16, 128, 128, 124);
+  grad.addColorStop(0, '#eef2f6');
+  grad.addColorStop(0.75, '#b8c0c8');
+  grad.addColorStop(1, '#7c848c');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(128, 128, 124, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#6c747c';
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.arc(128, 128, 112, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = '#485058';
+  ctx.textAlign = 'center';
+  ctx.font = '900 92px serif';
+  ctx.fillText('100', 128, 158);
+  ctx.font = 'bold 26px serif';
+  ctx.fillText('日 本 国', 128, 68);
+  ctx.fillText('令和八年', 128, 212);
+  return toTex(c, 1, 1, true);
+}
+
+// 12. Authentic Japanese Handwritten Station Log / Memo Paper Texture
+function buildLoreNotePaper(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(256, 320);
+  ctx.fillStyle = '#ebe4d2';
+  ctx.fillRect(0, 0, 256, 320);
+
+  // Subtle paper fiber & coffee/damp corner stain
+  ctx.fillStyle = 'rgba(130, 108, 76, 0.14)';
+  ctx.beginPath();
+  ctx.arc(220, 280, 58, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Horizontal blue notebook rules
+  ctx.strokeStyle = 'rgba(70, 110, 148, 0.28)';
+  ctx.lineWidth = 1.5;
+  for (let y = 44; y < 300; y += 22) {
+    ctx.beginPath();
+    ctx.moveTo(18, y);
+    ctx.lineTo(238, y);
+    ctx.stroke();
+  }
+
+  // Red JR新宿駅 header stamp & handwritten ink strokes
+  ctx.strokeStyle = '#b42428';
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(18, 14, 92, 22);
+  ctx.fillStyle = '#b42428';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('新宿駅 業務メモ', 23, 30);
+
+  ctx.fillStyle = '#222428';
+  const lines = [
+    '00:47 終電後 巡回報告',
+    '東口アルプス広場の展示台',
+    'ガラスが内側から割れて',
+    '紫のうさぎが消えた……',
+    '目を合わせるな 音に反応',
+    'Suica ¥1,000で東口解錠',
+  ];
+  ctx.font = '600 13px serif';
+  lines.forEach((txt, i) => {
+    ctx.fillText(txt, 22, 62 + i * 36);
+  });
   return toTex(c, 1, 1, true);
 }
 
