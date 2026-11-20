@@ -430,7 +430,7 @@ export class PlayerController {
         if (this.exhausted && this.stamina > 0.3) this.exhausted = false;
       }
 
-      const speed = this.crouching ? 2.15 : this.sprinting ? 6.15 : 3.7;
+      const speed = this.crouching ? 2.25 : this.sprinting ? 6.45 : 3.95;
       const fx = -Math.sin(this.yaw);
       const fz = -Math.cos(this.yaw);
       const rx = Math.cos(this.yaw);

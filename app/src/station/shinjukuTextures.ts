@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PLATFORM_STAIRS, PlatformStairDef } from './shinjukuMap';
+import { COLS, PLATFORM_STAIRS, PlatformStairDef, ROWS } from './shinjukuMap';
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -81,6 +81,10 @@ export interface ShinjukuTextureSet {
   wallTile: THREE.CanvasTexture;
   wallNormal: THREE.CanvasTexture;
   wallRoughness: THREE.CanvasTexture;
+  metroTileWall: THREE.CanvasTexture;
+  metroTileNormal: THREE.CanvasTexture;
+  westPillarConcrete: THREE.CanvasTexture;
+  westPillarNormal: THREE.CanvasTexture;
   pillarMetal: THREE.CanvasTexture;
   floorTerrazzo: THREE.CanvasTexture;
   floorNormal: THREE.CanvasTexture;
@@ -112,6 +116,13 @@ export interface ShinjukuTextureSet {
   gateHeaderCentralEast: THREE.CanvasTexture;
   gatePillarWest: THREE.CanvasTexture;
   gatePillarEast: THREE.CanvasTexture;
+  marunouchiHeader: THREE.CanvasTexture;
+  metroSuperPremium: THREE.CanvasTexture;
+  odakyuHeader: THREE.CanvasTexture;
+  keioHeader: THREE.CanvasTexture;
+  lumineHeader: THREE.CanvasTexture;
+  nexTunnelHeader: THREE.CanvasTexture;
+  southExitHeader: THREE.CanvasTexture;
   platformStairHeaders: Map<string, THREE.CanvasTexture>;
   platformNumPlaques: Map<string, THREE.CanvasTexture>;
   stationMap: THREE.CanvasTexture;
@@ -122,6 +133,9 @@ export interface ShinjukuTextureSet {
   signWestPassage: THREE.CanvasTexture;
   signCentralEast: THREE.CanvasTexture;
   signMetroPromenade: THREE.CanvasTexture;
+  signNorthMetro: THREE.CanvasTexture;
+  signWestRotary: THREE.CanvasTexture;
+  signSaikyoShonan: THREE.CanvasTexture;
   signMidoriTicket: THREE.CanvasTexture;
   signYamanote: THREE.CanvasTexture;
   signChuo: THREE.CanvasTexture;
@@ -150,6 +164,8 @@ export interface ShinjukuTextureSet {
 
 export function createShinjukuTextures(): ShinjukuTextureSet {
   const wall = buildShinjukuWall();
+  const metroWall = buildMetroTileWall();
+  const westPillar = buildWestPillarConcrete();
   const floor = buildShinjukuTerrazzo();
   const ceiling = buildShinjukuCeiling();
   const shutter = buildShutter();
@@ -167,6 +183,10 @@ export function createShinjukuTextures(): ShinjukuTextureSet {
     wallTile: wall.color,
     wallNormal: wall.normal,
     wallRoughness: wall.roughness,
+    metroTileWall: metroWall.color,
+    metroTileNormal: metroWall.normal,
+    westPillarConcrete: westPillar.color,
+    westPillarNormal: westPillar.normal,
     pillarMetal: buildPillarMetal(),
     floorTerrazzo: floor.color,
     floorNormal: floor.normal,
@@ -198,6 +218,13 @@ export function createShinjukuTextures(): ShinjukuTextureSet {
     gateHeaderCentralEast: buildGatePortalHeader('中央東改札', 'Central East Gate', 'ルミネエスト・東口方面'),
     gatePillarWest: buildGatePillarPlaque('西改札', 'West Gate', '西检票口  서쪽 개찰구'),
     gatePillarEast: buildGatePillarPlaque('東改札', 'East Gate', '東检票口  동쪽 개찰구'),
+    marunouchiHeader: buildMarunouchiHeader(),
+    metroSuperPremium: buildMetroSuperPremium(),
+    odakyuHeader: buildOdakyuHeader(),
+    keioHeader: buildKeioHeader(),
+    lumineHeader: buildLumineHeader(),
+    nexTunnelHeader: buildNexTunnelHeader(),
+    southExitHeader: buildSouthExitHeader(),
     platformStairHeaders,
     platformNumPlaques,
     stationMap: buildShinjukuGuideBoard(),
@@ -213,7 +240,7 @@ export function createShinjukuTextures(): ShinjukuTextureSet {
     ),
     signWestPassage: buildJRSign(
       '← 西口地下広場・都庁・小田急・京王',
-      'West Concourse · for Met. Gov. Office / Odakyu / Keio Lines',
+      'West Concourse · Met. Gov. Office / Odakyu / Keio / Oedo E01',
       '#f4f5f0',
       '#14181c',
       ['#0e6b38', '#008ed6', '#dd0077']
@@ -226,11 +253,32 @@ export function createShinjukuTextures(): ShinjukuTextureSet {
       ['#80c342', '#f15a22', '#ffd400']
     ),
     signMetroPromenade: buildJRSign(
-      '← 中央西改札 / 7〜16番線 / 中央東改札 →',
-      'Central Passage · Tracks 7-16 / Odakyu & Keio Transfer',
+      '← 中央西改札 / 1〜16番線 / 中央東改札 →',
+      'Central Passage · Tracks 1-16 / Odakyu & Keio Transfer',
       '#131b24',
       '#f0f4f2',
-      ['#80c342', '#f15a22', '#ffd400']
+      ['#80c342', '#f15a22', '#00ac9a', '#e21f26']
+    ),
+    signNorthMetro: buildJRSign(
+      '↑ 東京メトロ 丸ノ内線(M08)・メトロプロムナード',
+      'Tokyo Metro Marunouchi Line (M08) / Subnade / Shinjuku 3-chome',
+      '#181a1e',
+      '#f4f6f4',
+      ['#e60012', '#e60012', '#00a7db']
+    ),
+    signWestRotary: buildJRSign(
+      '← 西口地下広場・都庁 / 小田急・京王線 ↓',
+      'West Underground Plaza · Bus Rotary / Odakyu OH01 / Keio KO01',
+      '#f4f5f0',
+      '#14181c',
+      ['#007ed5', '#dd0077', '#c4125f']
+    ),
+    signSaikyoShonan: buildJRSign(
+      '1〜4番線 埼京線・湘南新宿 / 5・6番線 N\'EX →',
+      'Tracks 1-4 Saikyo & Shonan-Shinjuku / Tracks 5-6 Narita Express',
+      '#141a20',
+      '#f2f6f4',
+      ['#00ac9a', '#e21f26', '#d41b24']
     ),
     signMidoriTicket: buildWhiteOverheadSign('← きっぷうりば・みどりの窓口', 'Tickets / JR Ticket Office [i]'),
     signYamanote: buildPlatformSign('14・15', '山手線', '渋谷・品川 / 池袋・上野方面 [JY17]', '#80c342'),
@@ -319,12 +367,17 @@ function buildShinjukuWall() {
   rCtx.fillStyle = '#484848';
   rCtx.fillRect(0, 478, 512, 34);
 
-  // Subtle top soffit shadow gradient
+  // Subtle top soffit & grounded floor-wall contact AO shadow gradients
   const topAO = ctx.createLinearGradient(0, 0, 0, 140);
-  topAO.addColorStop(0, 'rgba(28,32,36,0.34)');
-  topAO.addColorStop(1, 'rgba(28,32,36,0)');
+  topAO.addColorStop(0, 'rgba(22,26,30,0.42)');
+  topAO.addColorStop(1, 'rgba(22,26,30,0)');
   ctx.fillStyle = topAO;
   ctx.fillRect(0, 0, 1024, 140);
+  const botAO = ctx.createLinearGradient(0, 880, 0, 1024);
+  botAO.addColorStop(0, 'rgba(18,20,24,0)');
+  botAO.addColorStop(1, 'rgba(18,20,24,0.48)');
+  ctx.fillStyle = botAO;
+  ctx.fillRect(0, 880, 1024, 144);
 
   return {
     color: toTex(c, 1, 1, true),
@@ -462,9 +515,9 @@ function buildShinjukuTerrazzo() {
   }
 
   return {
-    color: toTex(c, 21, 15, true),
-    normal: heightToNormal(nC, 0.76, 21, 15),
-    roughness: toTex(rC, 21, 15, false),
+    color: toTex(c, COLS, ROWS, true),
+    normal: heightToNormal(nC, 0.78, COLS, ROWS),
+    roughness: toTex(rC, COLS, ROWS, false),
   };
 }
 
@@ -505,8 +558,8 @@ function buildShinjukuCeiling() {
   ctx.strokeRect(160, 128, 192, 192);
 
   return {
-    color: toTex(c, 21, 15, true),
-    normal: heightToNormal(nC, 1.35, 21, 15),
+    color: toTex(c, COLS, ROWS, true),
+    normal: heightToNormal(nC, 1.35, COLS, ROWS),
   };
 }
 
@@ -2264,86 +2317,111 @@ function buildShinjukuGuideBoard(): THREE.CanvasTexture {
   ctx.font = '800 28px sans-serif';
   ctx.fillText('新宿駅 B1F 構内案内図   Shinjuku Station B1F Map', 92, 55);
 
-  // 1. North Artery: 東西自由通路 (East-West Free Passage)
+  // 1. North Artery: 東京メトロ丸ノ内線 & 東西自由通路
+  ctx.fillStyle = '#381e24';
+  ctx.fillRect(54, 82, 660, 26);
+  ctx.fillStyle = '#ff8a8a';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('東京メトロ メトロプロムナード ・ 丸ノ内線 新宿駅 (M08) 西改札 / 東改札', 384, 100);
+
   ctx.fillStyle = '#2d4b64';
-  ctx.fillRect(54, 102, 660, 92);
+  ctx.fillRect(54, 114, 660, 82);
   ctx.strokeStyle = '#5ab4e8';
   ctx.lineWidth = 2;
-  ctx.strokeRect(54, 102, 660, 92);
+  ctx.strokeRect(54, 114, 660, 82);
 
   // Shinjuku Wall 456 along North Wall
   ctx.fillStyle = '#24d0e8';
-  ctx.fillRect(195, 96, 360, 10);
+  ctx.fillRect(195, 110, 340, 8);
   ctx.fillStyle = '#9cf4ff';
-  ctx.textAlign = 'center';
-  ctx.font = 'bold 14px sans-serif';
-  ctx.fillText('新宿ウォール456 (W45.6m LEDビジョン)', 375, 91);
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('新宿ウォール456 (W45.6m LED)', 365, 132);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 20px sans-serif';
-  ctx.fillText('← 西口広場          東 西 自 由 通 路 (幅員25m)          アルプス広場・東口 →', 384, 142);
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillText('← 西口地下広場      東 西 自 由 通 路      アルプス広場・東口 →', 384, 158);
 
-  // J・ADビジョン 9 columns
+  // J・ADビジョン 10 columns
   ctx.fillStyle = '#a478e8';
-  for (const px of [118, 158]) {
-    ctx.fillRect(px, 122, 14, 14);
-    ctx.fillRect(px, 162, 14, 14);
+  for (const px of [126, 166]) {
+    ctx.fillRect(px, 134, 12, 12);
+    ctx.fillRect(px, 174, 12, 12);
   }
-  for (const px of [224, 288, 352, 416, 480]) {
-    ctx.fillRect(px, 162, 16, 14);
+  for (const px of [214, 268, 322, 376, 430, 484]) {
+    ctx.fillRect(px, 174, 14, 12);
   }
 
   // East Exit (歌舞伎町方面 最終出口)
   ctx.fillStyle = '#1e7844';
-  ctx.fillRect(636, 108, 74, 80);
+  ctx.fillRect(636, 118, 74, 74);
   ctx.fillStyle = '#9ef8c0';
-  ctx.font = 'bold 14px sans-serif';
-  ctx.fillText('東口出口', 673, 142);
-  ctx.fillText('(歌舞伎町)', 673, 162);
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('東口出口', 673, 150);
+  ctx.fillText('(歌舞伎町)', 673, 170);
 
-  // 2. Gate Line & みどりの窓口・きっぷうりば
+  // 2. Gate Line & みどりの窓口・きっぷうりば・ルミネエスト
   ctx.fillStyle = '#22382c';
-  ctx.fillRect(114, 196, 520, 42);
+  ctx.fillRect(114, 198, 520, 40);
   ctx.fillStyle = '#8ef0b0';
-  ctx.font = 'bold 15px sans-serif';
-  ctx.fillText('西改札', 156, 222);
-  ctx.fillText('東改札', 572, 222);
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText('西改札', 152, 223);
+  ctx.fillText('東改札', 462, 223);
   ctx.fillStyle = '#f2f6f0';
-  ctx.fillRect(230, 198, 260, 38);
+  ctx.fillRect(202, 200, 212, 36);
   ctx.fillStyle = '#0d6834';
-  ctx.font = 'bold 15px sans-serif';
-  ctx.fillText('きっぷうりば / みどりの窓口 Ticket Office', 360, 222);
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('きっぷ / みどりの窓口', 308, 223);
+  ctx.fillStyle = '#3c2448';
+  ctx.fillRect(512, 200, 120, 36);
+  ctx.fillStyle = '#e0bcf4';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('ルミネエスト B1F', 572, 223);
 
-  // 3. Inside-Gate Concourse & Platforms 16 -> 7 Stairs
+  // 3. West Wing (小田急・京王) & Inside-Gate Concourse ALL Platforms 16 -> 1
+  ctx.fillStyle = '#143868';
+  ctx.fillRect(54, 198, 56, 130);
+  ctx.fillStyle = '#84c6ff';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('小田急', 82, 256);
+  ctx.fillText('OH01', 82, 274);
+  ctx.fillStyle = '#5c1446';
+  ctx.fillRect(54, 332, 56, 76);
+  ctx.fillStyle = '#ff92d4';
+  ctx.fillText('京王', 82, 368);
+  ctx.fillText('KO01', 82, 386);
+
   ctx.fillStyle = '#1f2e26';
-  ctx.fillRect(114, 240, 520, 168);
+  ctx.fillRect(114, 240, 600, 168);
 
   const plats: Array<[string, string, string, number]> = [
-    ['15・16番線', '山手・総武線', '#7ac142', 162],
-    ['13・14番線', '山手・総武線', '#f2c700', 262],
-    ['11・12番線', '中央線(高尾)', '#f15a22', 362],
-    ['9・10番線', '中央線(特急)', '#2888d8', 462],
-    ['7・8番線', '中央線(東京)', '#f15a22', 562],
+    ['15・16', '山手/総武', '#7ac142', 156],
+    ['13・14', '総武/山手', '#f2c700', 238],
+    ['11・12', '中央快速', '#f15a22', 320],
+    ['9・10', '中央特急', '#2888d8', 402],
+    ['7・8', '中央快速', '#f15a22', 484],
+    ['3・4', '埼京/湘南', '#00ac9a', 566],
+    ['1・2', '湘南/埼京', '#e21f26', 648],
   ];
   for (const [num, name, col, px] of plats) {
     ctx.fillStyle = '#14181c';
-    ctx.fillRect(px - 38, 264, 76, 118);
+    ctx.fillRect(px - 34, 258, 68, 128);
     ctx.fillStyle = col;
-    ctx.fillRect(px - 38, 264, 76, 14);
+    ctx.fillRect(px - 34, 258, 68, 14);
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 14px sans-serif';
-    ctx.fillText(num, px, 314);
+    ctx.fillText(num, px, 310);
     ctx.fillStyle = '#b8c4cc';
-    ctx.font = '600 11px sans-serif';
-    ctx.fillText(name, px, 342);
+    ctx.font = '600 10.5px sans-serif';
+    ctx.fillText(name, px, 336);
   }
 
-  // 4. South Artery: 中央通路 + 中央西改札 & 中央東改札
+  // 4. South Artery: 中央通路 + 中央西改札 & 中央東改札 + 5・6番線 N'EX
   ctx.fillStyle = '#253830';
   ctx.fillRect(54, 410, 660, 74);
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 19px sans-serif';
-  ctx.fillText('← 中央西改札 (小田急・京王)          中 央 通 路          中央東改札 (ルミネエスト) →', 384, 454);
+  ctx.font = 'bold 17px sans-serif';
+  ctx.fillText('← 中央西改札 (小田急・京王)   中央通路・5・6番線 N\'EX   中央東改札 (ルミネ) →', 384, 454);
 
   // Outer West & East Passages
   ctx.fillStyle = '#24303c';
@@ -2630,6 +2708,290 @@ function buildSoftLightShaft(): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(c);
   tex.needsUpdate = true;
   return tex;
+}
+
+// Tokyo Metro Marunouchi Line (M08) Metro Promenade ceramic subway wall tile with crimson accent band!
+function buildMetroTileWall() {
+  const [c, ctx] = makeCanvas(512, 512);
+  const [nC, nCtx] = makeCanvas(256, 256);
+  const rnd = mulberry32(9088);
+
+  ctx.fillStyle = '#cfcdc6';
+  ctx.fillRect(0, 0, 512, 512);
+  nCtx.fillStyle = '#d0d0d0';
+  nCtx.fillRect(0, 0, 256, 256);
+
+  // Classic rectangular glazed Tokyo Metro subway tiles (128x64)
+  for (let y = 0; y < 512; y += 64) {
+    const off = (y / 64) % 2 === 0 ? 0 : 64;
+    for (let x = -64; x < 512; x += 128) {
+      const d = Math.floor((rnd() - 0.5) * 8);
+      ctx.fillStyle = `rgb(${214 + d},${213 + d},${208 + d})`;
+      ctx.fillRect(x + off + 2, y + 2, 124, 60);
+      nCtx.fillStyle = '#e2e2e2';
+      nCtx.fillRect((x + off) / 2 + 1, y / 2 + 1, 62, 30);
+    }
+  }
+  ctx.strokeStyle = 'rgba(72,74,78,0.62)';
+  ctx.lineWidth = 2.5;
+  for (let y = 0; y <= 512; y += 64) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+    nCtx.fillStyle = '#707070';
+    nCtx.fillRect(0, y / 2, 256, 1.5);
+  }
+  // Iconic Marunouchi Line Red (#e60012) horizontal waist stripe with white sine-wave trim
+  ctx.fillStyle = '#c81220';
+  ctx.fillRect(0, 210, 512, 34);
+  ctx.fillStyle = '#f2f4f2';
+  ctx.fillRect(0, 206, 512, 4);
+  ctx.fillRect(0, 244, 512, 4);
+
+  // Stainless steel kickplate & floor-wall contact AO
+  ctx.fillStyle = '#687078';
+  ctx.fillRect(0, 476, 512, 36);
+  const ao = ctx.createLinearGradient(0, 420, 0, 512);
+  ao.addColorStop(0, 'rgba(15,18,22,0)');
+  ao.addColorStop(1, 'rgba(15,18,22,0.45)');
+  ctx.fillStyle = ao;
+  ctx.fillRect(0, 420, 512, 92);
+
+  return {
+    color: toTex(c, 1, 1, true),
+    normal: heightToNormal(nC, 1.5, 1, 1),
+  };
+}
+
+// Iconic Shinjuku West Exit Underground Plaza (西口地下広場) ribbed concrete cylindrical columns!
+function buildWestPillarConcrete() {
+  const [c, ctx] = makeCanvas(512, 512);
+  const [nC, nCtx] = makeCanvas(256, 256);
+  const rnd = mulberry32(4141);
+
+  ctx.fillStyle = '#b6b4ac';
+  ctx.fillRect(0, 0, 512, 512);
+  nCtx.fillStyle = '#c8c8c8';
+  nCtx.fillRect(0, 0, 256, 256);
+
+  // Subtle architectural vertical flutes / concrete formwork ribs
+  for (let x = 0; x < 512; x += 32) {
+    const g = ctx.createLinearGradient(x, 0, x + 32, 0);
+    g.addColorStop(0, '#9c9b94');
+    g.addColorStop(0.45, '#c4c2ba');
+    g.addColorStop(1, '#92918a');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, 0, 32, 512);
+    nCtx.fillStyle = '#e8e8e8';
+    nCtx.fillRect(x / 2 + 2, 0, 12, 256);
+    nCtx.fillStyle = '#6c6c6c';
+    nCtx.fillRect(x / 2, 0, 2, 256);
+  }
+  for (let i = 0; i < 4500; i++) {
+    const v = 135 + Math.floor(rnd() * 60);
+    ctx.fillStyle = `rgba(${v},${v},${v - 4},0.18)`;
+    ctx.fillRect(rnd() * 512, rnd() * 512, 2, 2);
+  }
+  // Brushed stainless steel horizontal waist band & base kickplate
+  ctx.fillStyle = '#1f262e';
+  ctx.fillRect(0, 178, 512, 56);
+  ctx.fillStyle = '#e6e8e4';
+  ctx.font = '800 22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('西口地下広場  WEST PLAZA  //  都庁・小田急・京王', 256, 214);
+  ctx.fillStyle = '#6a727a';
+  ctx.fillRect(0, 466, 512, 46);
+
+  return {
+    color: toTex(c, 1, 1, true),
+    normal: heightToNormal(nC, 1.8, 1, 1),
+  };
+}
+
+// Official Tokyo Metro Marunouchi Line (M08) Shinjuku Station Red Fascia Header!
+function buildMarunouchiHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 160);
+  ctx.fillStyle = '#181c20';
+  ctx.fillRect(0, 0, 1024, 160);
+  ctx.fillStyle = '#d41624';
+  ctx.fillRect(0, 0, 1024, 22);
+  ctx.fillRect(0, 138, 1024, 22);
+
+  // Iconic Red Ring M08 Station Number Badge
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(92, 80, 46, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#e60012';
+  ctx.lineWidth = 12;
+  ctx.beginPath(); ctx.arc(92, 80, 38, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#14181c';
+  ctx.textAlign = 'center';
+  ctx.font = '900 24px sans-serif';
+  ctx.fillText('M', 92, 74);
+  ctx.font = '900 26px sans-serif';
+  ctx.fillText('08', 92, 102);
+
+  ctx.fillStyle = '#f4f6f4';
+  ctx.textAlign = 'left';
+  ctx.font = '800 44px sans-serif';
+  ctx.fillText('東京メトロ 丸ノ内線  新宿駅改札', 162, 78);
+  ctx.fillStyle = '#d8dee2';
+  ctx.font = '600 22px sans-serif';
+  ctx.fillText('Tokyo Metro Marunouchi Line · for Ogikubo / Ginza / Tokyo / Ikebukuro', 164, 118);
+  return toTex(c, 1, 1, true);
+}
+
+// Metro Promenade Illuminated Super Premium Poster Wall
+function buildMetroSuperPremium(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 256);
+  const bg = ctx.createLinearGradient(0, 0, 1024, 256);
+  bg.addColorStop(0, '#0e1624');
+  bg.addColorStop(0.5, '#1b1428');
+  bg.addColorStop(1, '#0e1624');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 1024, 256);
+  ctx.strokeStyle = '#c81624';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(8, 8, 1008, 240);
+
+  ctx.fillStyle = '#e60012';
+  ctx.fillRect(26, 26, 12, 204);
+  ctx.fillStyle = '#e8ecf2';
+  ctx.textAlign = 'left';
+  ctx.font = '800 42px sans-serif';
+  ctx.fillText('新宿メトロプロムナード  //  M08', 60, 102);
+  ctx.fillStyle = '#9aa8be';
+  ctx.font = '600 24px sans-serif';
+  ctx.fillText('SHINJUKU METRO PROMENADE — 西口地下広場 ⇄ サブナード・新宿三丁目', 62, 154);
+  ctx.fillStyle = '#c84252';
+  ctx.font = '700 20px monospace';
+  ctx.fillText('00:47 LAST TRAIN DEPARTED // DO NOT TURN BACK IN THE CORRIDOR', 62, 204);
+  return toTex(c, 1, 1, true);
+}
+
+// Official Odakyu Electric Railway (OH01) Shinjuku West Underground Gate Cobalt-Blue Header!
+function buildOdakyuHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 160);
+  ctx.fillStyle = '#0068b8';
+  ctx.fillRect(0, 0, 1024, 160);
+  ctx.fillStyle = '#004884';
+  ctx.fillRect(0, 126, 1024, 34);
+
+  // OH01 Station Badge
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(28, 26, 100, 82);
+  ctx.strokeStyle = '#007ed5';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(32, 30, 92, 74);
+  ctx.fillStyle = '#005ca8';
+  ctx.textAlign = 'center';
+  ctx.font = '900 26px sans-serif';
+  ctx.fillText('OH', 78, 64);
+  ctx.font = '900 28px sans-serif';
+  ctx.fillText('01', 78, 94);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.font = '800 44px sans-serif';
+  ctx.fillText('小田急線  西口地下改札口', 156, 76);
+  ctx.fillStyle = '#d4ecff';
+  ctx.font = '600 22px sans-serif';
+  ctx.fillText('Odakyu Line West Underground Gate · Odawara / Hakone-Yumoto / Romancecar', 158, 114);
+  ctx.fillStyle = '#a8d4f4';
+  ctx.font = '700 18px monospace';
+  ctx.fillText('終電終了・シャッター閉鎖中  //  SHINJUKU STATION OH01', 158, 150);
+  return toTex(c, 1, 1, true);
+}
+
+// Official Keio Line (KO01) Shinjuku Keio West Gate Cherry-Magenta & Navy Header!
+function buildKeioHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 160);
+  ctx.fillStyle = '#0d2668';
+  ctx.fillRect(0, 0, 1024, 160);
+  ctx.fillStyle = '#cf006c';
+  ctx.fillRect(0, 0, 1024, 24);
+  ctx.fillRect(0, 134, 1024, 26);
+
+  // KO01 Badge
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(28, 36, 98, 84);
+  ctx.fillStyle = '#cf006c';
+  ctx.textAlign = 'center';
+  ctx.font = '900 26px sans-serif';
+  ctx.fillText('KO', 77, 72);
+  ctx.fillStyle = '#0d2668';
+  ctx.font = '900 28px sans-serif';
+  ctx.fillText('01', 77, 104);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.font = '800 44px sans-serif';
+  ctx.fillText('京王線  京王西口・百貨店口', 154, 82);
+  ctx.fillStyle = '#e8cce0';
+  ctx.font = '600 22px sans-serif';
+  ctx.fillText('Keio Line Keio West Gate · Chofu / Hashimoto / Keio-Hachioji / Takaosanguchi', 156, 120);
+  return toTex(c, 1, 1, true);
+}
+
+// Official LUMINE EST SHINJUKU B1F East Underground Arcade Facade!
+function buildLumineHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 192);
+  ctx.fillStyle = '#181a1e';
+  ctx.fillRect(0, 0, 1024, 192);
+  ctx.fillStyle = '#c8aa68';
+  ctx.fillRect(0, 0, 1024, 10);
+  ctx.fillRect(0, 182, 1024, 10);
+
+  ctx.fillStyle = '#ece6d4';
+  ctx.textAlign = 'center';
+  ctx.font = '800 54px serif';
+  ctx.fillText('L U M I N E   E S T   S H I N J U K U', 512, 92);
+  ctx.fillStyle = '#c8b482';
+  ctx.font = '600 24px sans-serif';
+  ctx.fillText('ルミネエスト新宿 B1F 連絡口  //  東口地下広場・アルタ・歌舞伎町方面  [閉店中]', 512, 146);
+  return toTex(c, 1, 1, true);
+}
+
+// Authentic 5・6番線 Narita Express (N'EX) Underground Connector Tunnel Header!
+function buildNexTunnelHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 192);
+  ctx.fillStyle = '#16181c';
+  ctx.fillRect(0, 0, 1024, 192);
+  ctx.fillStyle = '#cc1c24';
+  ctx.fillRect(0, 0, 210, 192);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = '900 72px sans-serif';
+  ctx.fillText('5·6', 105, 104);
+  ctx.font = '900 28px monospace';
+  ctx.fillText("N'EX", 105, 154);
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#f4f6f4';
+  ctx.font = '800 40px sans-serif';
+  ctx.fillText('成田エクスプレス・東武線直通特急', 240, 74);
+  ctx.fillStyle = '#e0484e';
+  ctx.font = '700 26px sans-serif';
+  ctx.fillText('↓ 5・6番線 連絡地下通路  Narita Express Underground Tunnel', 240, 122);
+  ctx.fillStyle = '#a4acb4';
+  ctx.font = '600 20px monospace';
+  ctx.fillText('CAUTION: ISOLATED UNDERGROUND DEAD-END AFTER LAST TRAIN (00:47)', 240, 164);
+  return toTex(c, 1, 1, true);
+}
+
+// South Exit / Koshu-Kaido / Busta Shinjuku Closed Staircase Header
+function buildSouthExitHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 160);
+  ctx.fillStyle = '#182026';
+  ctx.fillRect(0, 0, 1024, 160);
+  ctx.fillStyle = '#0e6b38';
+  ctx.fillRect(0, 0, 1024, 18);
+  ctx.fillStyle = '#f4f6f2';
+  ctx.textAlign = 'center';
+  ctx.font = '800 40px sans-serif';
+  ctx.fillText('↑ 南口・甲州街道・バスタ新宿・NEWoMan（2F）', 512, 78);
+  ctx.fillStyle = '#e86858';
+  ctx.font = '700 24px sans-serif';
+  ctx.fillText('South Exit · Busta Shinjuku — 終電後シャッター閉鎖中（東口非常出口へ）', 512, 126);
+  return toTex(c, 1, 1, true);
 }
 
 // Moody 00:47 Midnight Shinjuku Station PMREM reflection cube (eliminates harsh ceiling whiteout reflections!)

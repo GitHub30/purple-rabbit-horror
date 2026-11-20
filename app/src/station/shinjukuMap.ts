@@ -1,32 +1,44 @@
 export const CELL = 4.0;
 export const LOW_CEILING = 3.65;
-export const HIGH_CEILING = 4.25;
-export const COLS = 21; // 84m East-West (West Exit <-> East-West Free Passage <-> East Exit)
-export const ROWS = 15; // 60m North-South (Shinjuku Wall 456 <-> Platform 7-16 Stairs <-> Central Passage)
+export const HIGH_CEILING = 4.35;
+export const PLAZA_CEILING = 6.2; // Recessed circular rotary skylight atrium in 西口地下広場
+export const COLS = 35; // 140m East-West (West Plaza / Odakyu / Keio <-> JR 16..1番線 <-> East Plaza / Lumine Est)
+export const ROWS = 23; // 92m North-South (Metro Promenade M08 <-> East-West Free Passage <-> Platforms 1-16 <-> Central Passage & N'EX Tunnel)
 
-// Authentic JR Shinjuku Station B1F Grid (North = -Z, South = +Z, West = -X, East = +X)
-// 0 = walkable concourse/passage
+// Real-World JR Shinjuku Station B1F + Surrounding Underground Complex Grid
+// North = -Z (row 0), South = +Z (row 22), West = -X (col 0), East = +X (col 34)
+// 0 = walkable concourse / passage
 // 1 = solid architectural wall
-// 2 = J・ADビジョン新宿駅 Light-Box Digital Signage Column (4柱 at 西改札前 + 5柱 along 東西自由通路 = 9 columns)
+// 2 = J・ADビジョン新宿駅 Light-Box Digital Signage Column (10 columns in 東西自由通路 & 西改札前)
 // 3 = みどりの窓口 Ticket Office glass storefront partition (blocks movement, transparent LOS)
-// 4 = JR新宿駅 1Fホーム連絡階段・エスカレーター (15・16 / 13・14 / 11・12 / 9・10 / 7・8番線)
+// 4 = JR新宿駅 1Fホーム連絡階段・エスカレーター (ALL 1〜16番線: 15・16 / 13・14 / 11・12 / 9・10 / 7・8 / 3・4 / 1・2番線)
+// 5 = Cylindrical structural concrete/stainless column (西口地下広場大円柱 & メトロプロムナード円柱 & 東口円柱)
+// 6 = Private rail / subway glass ticket-gate facade (丸ノ内線 M08 / 小田急線 OH01 / 京王線 KO01 — transparent LOS!)
 export const SHINJUKU_GRID: number[][] = [
-  // c:0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // R0: 北外壁 (c=5..15 新宿ウォール456 W45.6m×H1.7m)
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // R1: 東西自由通路 北側 (新宿ウォール456前) | c=19..20 東口(歌舞伎町・アルタ)地上出口
-  [1, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // R2: 西改札前 J・ADビジョン北列(2,2)(4,2) | 東西自由通路中央 | アルプス広場展示台 | 東口出口
-  [1, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0], // R3: 西改札前 J・ADビジョン南列(2,3)(4,3) | 東西自由通路 J・ADビジョン列柱(6,8,10,12,14) | 東改札前
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1], // R4: 東西自由通路 南側 (西改札前・きっぷうりば前・みどりの窓口前・東改札前)
-  [1, 0, 1, 0, 0, 0, 1, 1, 1, 3, 3, 3, 1, 0, 1, 0, 0, 0, 1, 0, 1], // R5: 西口通路(1) | 西改札(3..5) | きっぷうりば(6..8) | みどりの窓口(9..11) | 事務室(13) | 東改札(15..17) | 東口通路(19)
-  [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1], // R6: 改札内北コンコース (西改札内〜みどりの窓口裏〜東改札内)
-  [1, 0, 1, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 1, 0, 1], // R7: 1Fホーム階段(北): 15・16番線(4) | 13・14番線(7) | 11・12番線(10) | 9・10番線(13) | 7・8番線(16)
-  [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1], // R8: 改札内エレベーター・横断連絡通路
-  [1, 0, 1, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 1, 0, 1], // R9: 1Fホーム階段(南): 15・16番線(4) | 13・14番線(7) | 11・12番線(10) | 9・10番線(13) | 7・8番線(16)
-  [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1], // R10: 中央通路北側 (各番線南階段前)
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], // R11: 中央通路 (c=2 中央西改札・小田急/京王乗換 | c=3..17 中央通路 | c=18 中央東改札)
-  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], // R12: 中央通路南側 (中央西改札〜精算機・NewDays西改札内〜中央東改札)
-  [1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1], // R13: 南側設備アルコーブ (c=4..5 小田急連絡口 | c=9..11 中央通路精算・券売機 | c=15..16 中央東口店舗)
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // R14: 南外壁 (南口・甲州街道方面境界)
+  // c:0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // R0: 北外壁 (丸ノ内線B2Fホーム境界)
+  [1, 0, 0, 0, 0, 0, 1, 1, 1, 6, 6, 6, 6, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 6, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1], // R1: 丸ノ内線西改札M08(9..12) | 丸ノ内線東改札M08(21..24)
+  [1, 0, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 1], // R2: 東京メトロ メトロプロムナード北列 (全長132m!)
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], // R3: 東京メトロ メトロプロムナード南列
+  [1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1], // R4: 南北連絡通路 (西口広場1..5 | 西連絡7 | 東連絡24 | 東口広場31..32)
+  [1, 0, 5, 0, 5, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1], // R5: 南面c=9..20が新宿ウォール456(45.6m!) | 西口地下広場大柱
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // R6: 西口地下広場 | 東西自由通路北側(ウォール456前) | アルプス広場 | 東口地上出口(33..34)
+  [1, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // R7: 西口ロータリー中央 | 西改札前J・AD北列(7,9) | 東西自由通路中央 | アルプス広場展示台(25.5) | 東口出口
+  [1, 0, 5, 0, 5, 0, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0], // R8: 西口大円柱(2,4) | J・ADビジョン光柱列(7,9,11,13,15,17,19,21) | 東口柱(28) | 東口出口
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1], // R9: 東西自由通路南側 (西改札・きっぷ・みどりの窓口・東改札・ルミネエストB1F前)
+  [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 3, 3, 3, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1], // R10: 西口広場(1..5) | 西改札(7..9) | きっぷ(10..12) | みどりの窓口(13..15) | 事務室裏(17) | 東改札(19..21) | ルミネ壁(22..30) | 東口通路(31..33)
+  [1, 0, 5, 0, 5, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 5, 0, 1], // R11: 西口広場南 | JR改札内北コンコース(7..21) | 東口・ルミネエスト連絡通路(31..33)
+  [1, 0, 0, 0, 0, 0, 1, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1], // R12: 1Fホーム北階段: 15・16(8) | 13・14(11) | 11・12(14) | 9・10(17) | 7・8(20)
+  [1, 6, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1], // R13: 小田急西口地下改札(1) | 改札内横断連絡通路(7..29: 1〜4番線エリアへ接続!)
+  [1, 6, 0, 0, 0, 0, 1, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 4, 0, 1, 0, 5, 0, 1], // R14: 小田急改札(1) | ホーム階段: 15・16(8)..7・8(20) + 3・4番線(25) + 1・2番線(28)!
+  [1, 6, 0, 5, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1], // R15: 小田急・京王コンコース | JR中央通路北側 (1〜16番線)
+  [1, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], // R16: 中央通路北レーン (小田急/京王 ⇄ 中央西改札6 ⇄ 中央通路7..29 ⇄ 中央東改札30 ⇄ 東口広場)
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], // R17: 中央通路中央レーン (全長132m!)
+  [1, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 1], // R18: 中央通路南レーン (京王西口前 ⇄ 中央西改札 ⇄ 精算・N'EX通路 ⇄ 中央東改札)
+  [1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 4, 0, 0, 4, 0, 1, 0, 0, 0, 1], // R19: 京王西口前(1..5) | 証明写真・精算(9..11) | 南口連絡(15..17) | 5・6番線N'EX地下道入口(23) | 3・4(25)&1・2(28)南階段!
+  [1, 1, 6, 6, 6, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1], // R20: 京王線京王西口改札KO01(2..4) | 精算アルコーブ(9..11) | 5・6 N'EX地下道(23) | 1〜4番線南端折返し(25..29)
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // R21: 5・6番線 成田エクスプレス(N'EX) 地下連絡ホーム入口(22..24)
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // R22: 南外壁 (南口・甲州街道・バスタ新宿境界)
 ];
 
 export function cellCenter(col: number, row: number): { x: number; z: number } {
@@ -37,39 +49,83 @@ export function worldToCell(x: number, z: number): { col: number; row: number } 
   return { col: Math.floor(x / CELL), row: Math.floor(z / CELL) };
 }
 
-// The 25m-wide 東西自由通路 (rows 1..4) has the higher ceiling with indirect cove line LEDs
+// High-ceiling zones: 東西自由通路 + アルプス広場 + 東口地下広場 (rows 6..9, cols 6..34)
 export function isHighCeiling(col: number, row: number): boolean {
-  return col >= 1 && col <= 18 && row >= 1 && row <= 4;
+  return col >= 6 && col <= 34 && row >= 6 && row <= 9;
 }
 
-// Player spawns in 東西自由通路 looking East (+X, yaw = -Math.PI/2) down the iconic corridor:
-// Left: 45.6m 新宿ウォール456 | Right: J・ADビジョン light-columns & みどりの窓口 | Ahead: アルプス広場展示台 & 東口出口
-export const PLAYER_SPAWN = { x: 8.6 * CELL, z: 2.32 * CELL, yaw: -Math.PI / 2 };
-export const PEDESTAL_POS = { x: 14.8 * CELL, z: 2.25 * CELL };
-export const RABBIT_INTRO_POS = { x: 17.55 * CELL, z: 2.25 * CELL, rotY: -Math.PI / 2 };
+// Recessed circular rotary skylight atrium in 新宿西口地下広場 (cols 1..5, rows 5..11)
+export function isWestPlazaAtrium(col: number, row: number): boolean {
+  return col >= 1 && col <= 5 && row >= 5 && row <= 11;
+}
+
+// Real-time Japanese zone name & CCTV camera ID for HUD & Station Map!
+export function getShinjukuZone(x: number, z: number): { cam: string; name: string } {
+  const col = Math.floor(x / CELL);
+  const row = Math.floor(z / CELL);
+  if (row <= 3) {
+    if (col <= 5) return { cam: 'CAM-W02', name: '西口地下広場・大江戸線新宿西口駅方面' };
+    if (col >= 31) return { cam: 'CAM-M09', name: '新宿サブナード・アルタ地下連絡口' };
+    return { cam: 'CAM-M08', name: '東京メトロ メトロプロムナード（丸ノ内線 M08）' };
+  }
+  if (col <= 5) {
+    if (row >= 13 && row <= 17) return { cam: 'CAM-OH1', name: '小田急線 西口地下改札コンコース（OH01）' };
+    if (row >= 18) return { cam: 'CAM-KO1', name: '京王線 京王西口・百貨店口コンコース（KO01）' };
+    return { cam: 'CAM-W01', name: '新宿西口地下広場（ロータリー吹き抜け）' };
+  }
+  if (row >= 6 && row <= 9) {
+    if (col >= 30) return { cam: 'CAM-E01', name: '東口地下広場・歌舞伎町／アルタ地上出口' };
+    if (col >= 22) return { cam: 'CAM-E03', name: '東西自由通路・アルプス広場（東口）' };
+    return { cam: 'CAM-E04', name: '東西自由通路・新宿ウォール456' };
+  }
+  if (col >= 31) {
+    return { cam: 'CAM-LE1', name: 'ルミネエスト新宿 B1F・NewDays連絡通路' };
+  }
+  if (row >= 19 && col >= 22 && col <= 24) {
+    return { cam: 'CAM-NX5', name: '5・6番線 成田エクスプレス（N\'EX）連絡地下道' };
+  }
+  if (col >= 23 && row >= 13) {
+    return { cam: 'CAM-JS1', name: 'JR改札内 1〜4番線（埼京線・湘南新宿ライン）' };
+  }
+  if (row >= 16) {
+    if (col <= 11) return { cam: 'CAM-CW1', name: '中央通路・中央西改札（小田急・京王連絡）' };
+    if (col >= 25) return { cam: 'CAM-CE1', name: '中央通路・中央東改札（ルミネエスト方面）' };
+    return { cam: 'CAM-C02', name: 'JR改札内 中央通路（全1〜16番線連絡）' };
+  }
+  if (col <= 12) return { cam: 'CAM-P14', name: 'JR改札内 13〜16番線（山手線・総武線）' };
+  return { cam: 'CAM-P08', name: 'JR改札内 7〜12番線（中央快速・中央特急）' };
+}
+
+// Player spawns in 東西自由通路 looking East (+X, yaw = -Math.PI/2) down the 100m iconic corridor:
+// Left: 45.6m 新宿ウォール456 | Right: J・ADビジョン columns, きっぷうりば & みどりの窓口 | Ahead: アルプス広場 & 東口出口
+export const PLAYER_SPAWN = { x: 11.8 * CELL, z: 7.35 * CELL, yaw: -Math.PI / 2 };
+export const PEDESTAL_POS = { x: 25.5 * CELL, z: 7.35 * CELL };
+export const RABBIT_INTRO_POS = { x: 28.4 * CELL, z: 7.35 * CELL, rotY: -Math.PI / 2 };
 
 // Final Escape Exit Gate & Shutter at the East end of 東西自由通路 (東口・歌舞伎町／アルタ方面 地上出口)
-export const GATE_LINE_X = 18.85 * CELL; // x = 75.4m
-export const GATE_LINE_Z = 2.25 * CELL; // z = 9.0m (center of East Exit portal)
-export const EXIT_GATE_INTERACT = { x: 18.45 * CELL, z: 2.25 * CELL };
-export const VICTORY_X = 19.45 * CELL; // x > 77.8m triggers Victory
-export const VICTORY_Z = 2.25 * CELL;
+export const GATE_LINE_X = 32.85 * CELL; // x = 131.4m
+export const GATE_LINE_Z = 7.5 * CELL; // z = 30.0m (center of East Exit portal)
+export const EXIT_GATE_INTERACT = { x: 32.4 * CELL, z: 7.5 * CELL };
+export const VICTORY_X = 33.45 * CELL; // x > 133.8m triggers Victory
+export const VICTORY_Z = 7.5 * CELL;
 
-// Shinjuku Wall 456 span along the North wall of 東西自由通路 (z = 4.06m, x = 20.0m .. 65.6m = 45.6m!)
+// Shinjuku Wall 456 span along the North wall of 東西自由通路 (z = 24.06m, x = 36.0m .. 81.6m = EXACT 45.6m!)
 export const WALL_456_SPAN = {
-  xStart: 5.0 * CELL,
-  xEnd: 16.4 * CELL,
-  z: 1.0 * CELL + 0.06,
+  xStart: 9.0 * CELL,
+  xEnd: 20.4 * CELL,
+  z: 6.0 * CELL + 0.06,
   height: 1.72,
   centerY: 1.32,
 };
 
-export const PHOTOBOOTH_POS = { x: 4.5 * CELL, z: 13.5 * CELL };
-export const PAYPHONE_POS = { x: 1 * CELL + 0.52, z: 7.5 * CELL };
+export const PHOTOBOOTH_POS = { x: 10.5 * CELL, z: 20.5 * CELL };
+export const PAYPHONE_POS = { x: 1.0 * CELL + 0.52, z: 12.2 * CELL };
 
 export interface PlatformStairDef {
   id: string;
   col: number;
+  northRow: number;
+  southRow: number;
   numLeft: string;
   numRight: string;
   titleLeft: string;
@@ -83,11 +139,13 @@ export interface PlatformStairDef {
   glowColor: number;
 }
 
-// Authentic West-to-East platform stairs of JR Shinjuku Station B1F (16番線 -> 7番線)
+// Authentic West-to-East platform stairs of JR Shinjuku Station B1F (ALL 16番線 -> 1番線!)
 export const PLATFORM_STAIRS: PlatformStairDef[] = [
   {
     id: 'plat-15-16',
-    col: 4,
+    col: 8,
+    northRow: 12,
+    southRow: 14,
     numLeft: '16',
     numRight: '15',
     titleLeft: '中央・総武線 (各駅停車)',
@@ -102,7 +160,9 @@ export const PLATFORM_STAIRS: PlatformStairDef[] = [
   },
   {
     id: 'plat-13-14',
-    col: 7,
+    col: 11,
+    northRow: 12,
+    southRow: 14,
     numLeft: '14',
     numRight: '13',
     titleLeft: '山手線 (内回り)',
@@ -117,7 +177,9 @@ export const PLATFORM_STAIRS: PlatformStairDef[] = [
   },
   {
     id: 'plat-11-12',
-    col: 10,
+    col: 14,
+    northRow: 12,
+    southRow: 14,
     numLeft: '12',
     numRight: '11',
     titleLeft: '中央線 (快速)',
@@ -132,7 +194,9 @@ export const PLATFORM_STAIRS: PlatformStairDef[] = [
   },
   {
     id: 'plat-9-10',
-    col: 13,
+    col: 17,
+    northRow: 12,
+    southRow: 14,
     numLeft: '10',
     numRight: '9',
     titleLeft: '中央本線 (特急)',
@@ -147,7 +211,9 @@ export const PLATFORM_STAIRS: PlatformStairDef[] = [
   },
   {
     id: 'plat-7-8',
-    col: 16,
+    col: 20,
+    northRow: 12,
+    southRow: 14,
     numLeft: '8',
     numRight: '7',
     titleLeft: '中央線 (快速)',
@@ -160,6 +226,40 @@ export const PLATFORM_STAIRS: PlatformStairDef[] = [
     badgeRight: 'JC',
     glowColor: 0xe66224,
   },
+  {
+    id: 'plat-3-4',
+    col: 25,
+    northRow: 14,
+    southRow: 19,
+    numLeft: '4',
+    numRight: '3',
+    titleLeft: '埼京線・湘南新宿ライン',
+    subLeft: '池袋・赤羽・大宮・宇都宮方面',
+    colorLeft: '#00ac9a',
+    badgeLeft: 'JA',
+    titleRight: '湘南新宿ライン (北行)',
+    subRight: '池袋・大宮・高崎方面  Shonan-Shinjuku',
+    colorRight: '#e21f26',
+    badgeRight: 'JS',
+    glowColor: 0x16a89a,
+  },
+  {
+    id: 'plat-1-2',
+    col: 28,
+    northRow: 14,
+    southRow: 19,
+    numLeft: '2',
+    numRight: '1',
+    titleLeft: '埼京線 (南行)',
+    subLeft: '渋谷・大崎・新木場・海老名方面',
+    colorLeft: '#00ac9a',
+    badgeLeft: 'JA',
+    titleRight: '湘南新宿ライン (南行)',
+    subRight: '渋谷・横浜・大船・小田原方面',
+    colorRight: '#e21f26',
+    badgeRight: 'JS',
+    glowColor: 0xd83236,
+  },
 ];
 
 export interface TerminalDef {
@@ -171,47 +271,47 @@ export interface TerminalDef {
   rotY: number;
 }
 
-// 5 Suica Charge Terminals at authentic JR Shinjuku B1F ticket / fare-adjustment locations
+// 5 Suica Charge Terminals spanning ALL 5 iconic real-world wings of Shinjuku Station B1F!
 export const TERMINALS: TerminalDef[] = [
   {
     id: 'term-midori',
     name: 'チャージ機 #01',
     zone: '東西自由通路・地下みどりの窓口横 きっぷうりば',
-    x: 7.5 * CELL,
-    z: 5.0 * CELL - 0.42,
+    x: 11.5 * CELL,
+    z: 10.0 * CELL - 0.44,
     rotY: Math.PI,
   },
   {
-    id: 'term-west-gate',
+    id: 'term-metro',
     name: 'チャージ機 #02',
-    zone: '東西自由通路・西改札前（西口広場方面）',
-    x: 1.0 * CELL + 0.46,
-    z: 2.5 * CELL,
-    rotY: Math.PI / 2,
-  },
-  {
-    id: 'term-inside-14',
-    name: 'チャージ機 #03',
-    zone: '改札内コンコース・13/14番線階段横 のりこし精算所',
-    x: 7.5 * CELL,
-    z: 6.0 * CELL + 0.42,
+    zone: '東京メトロ メトロプロムナード・丸ノ内線M08改札前',
+    x: 16.5 * CELL,
+    z: 2.0 * CELL + 0.44,
     rotY: 0,
   },
   {
-    id: 'term-central-west',
-    name: 'チャージ機 #04',
-    zone: '中央通路・中央西改札（小田急・京王のりかえ口）',
-    x: 5.5 * CELL,
-    z: 14.0 * CELL - 0.46,
-    rotY: Math.PI,
+    id: 'term-west-odakyu',
+    name: 'チャージ機 #03',
+    zone: '西口地下広場・小田急線／京王線連絡コンコース',
+    x: 5.95 * CELL - 0.38,
+    z: 14.5 * CELL,
+    rotY: -Math.PI / 2,
   },
   {
-    id: 'term-central-east',
+    id: 'term-inside-14',
+    name: 'チャージ機 #04',
+    zone: 'JR改札内コンコース・13/14番線階段横 のりこし精算所',
+    x: 11.5 * CELL,
+    z: 11.0 * CELL + 0.44,
+    rotY: 0,
+  },
+  {
+    id: 'term-saikyo-nex',
     name: 'チャージ機 #05',
-    zone: '中央東改札・ルミネエスト／NewDays新宿横',
-    x: 16.5 * CELL,
-    z: 14.0 * CELL - 0.46,
-    rotY: Math.PI,
+    zone: '中央通路東・1〜4番線（埼京線）／5・6番線N\'EX連絡口',
+    x: 26.5 * CELL,
+    z: 13.0 * CELL + 0.44,
+    rotY: 0,
   },
 ];
 
@@ -231,63 +331,87 @@ export interface HidingSpotDef {
 export const HIDING_SPOTS: HidingSpotDef[] = [
   {
     id: 'hide-phone',
-    name: '公衆電話ボックス（西口地下連絡通路）',
+    name: '公衆電話ボックス（西口地下広場・小田急連絡口）',
     kind: 'phonebooth',
-    x: 1 * CELL + 0.52,
-    z: 7.5 * CELL,
+    x: 1.0 * CELL + 0.52,
+    z: 12.2 * CELL,
     rotY: Math.PI / 2,
-    insideX: 1 * CELL + 0.48,
-    insideZ: 7.5 * CELL,
-    exitX: 1 * CELL + 1.52,
-    exitZ: 7.5 * CELL,
+    insideX: 1.0 * CELL + 0.48,
+    insideZ: 12.2 * CELL,
+    exitX: 1.0 * CELL + 1.52,
+    exitZ: 12.2 * CELL,
   },
   {
     id: 'hide-west-locker',
-    name: 'Suicaコインロッカー（西改札前広場）',
+    name: 'Suicaコインロッカー（西口地下広場北側）',
     kind: 'locker',
-    x: 1 * CELL + 0.48,
-    z: 4.2 * CELL,
+    x: 1.0 * CELL + 0.48,
+    z: 7.2 * CELL,
     rotY: Math.PI / 2,
-    insideX: 1 * CELL + 0.42,
-    insideZ: 4.2 * CELL,
-    exitX: 1 * CELL + 1.48,
-    exitZ: 4.2 * CELL,
+    insideX: 1.0 * CELL + 0.42,
+    insideZ: 7.2 * CELL,
+    exitX: 1.0 * CELL + 1.48,
+    exitZ: 7.2 * CELL,
+  },
+  {
+    id: 'hide-metro-locker',
+    name: '大型コインロッカー（メトロプロムナード 丸ノ内線連絡）',
+    kind: 'locker',
+    x: 19.5 * CELL,
+    z: 4.0 * CELL - 0.48,
+    rotY: Math.PI,
+    insideX: 19.5 * CELL,
+    insideZ: 4.0 * CELL - 0.42,
+    exitX: 19.5 * CELL,
+    exitZ: 4.0 * CELL - 1.48,
   },
   {
     id: 'hide-midori-office',
     name: '駅員用ロッカー（地下みどりの窓口・駅事務室裏）',
     kind: 'locker',
-    x: 12.0 * CELL + 0.48,
-    z: 5.5 * CELL,
+    x: 17.0 * CELL + 0.48,
+    z: 10.5 * CELL,
     rotY: Math.PI / 2,
-    insideX: 12.0 * CELL + 0.42,
-    insideZ: 5.5 * CELL,
-    exitX: 12.0 * CELL + 1.48,
-    exitZ: 5.5 * CELL,
+    insideX: 17.0 * CELL + 0.42,
+    insideZ: 10.5 * CELL,
+    exitX: 17.0 * CELL + 1.48,
+    exitZ: 10.5 * CELL,
   },
   {
     id: 'hide-central-sw',
-    name: '清掃用具ロッカー（中央通路 15・16番線階段下）',
+    name: '清掃用具ロッカー（中央通路 13〜16番線精算所裏）',
     kind: 'locker',
-    x: 4.0 * CELL + 0.48,
-    z: 13.5 * CELL,
+    x: 9.0 * CELL + 0.48,
+    z: 20.4 * CELL,
     rotY: Math.PI / 2,
-    insideX: 4.0 * CELL + 0.42,
-    insideZ: 13.5 * CELL,
-    exitX: 4.0 * CELL + 1.48,
-    exitZ: 13.5 * CELL,
+    insideX: 9.0 * CELL + 0.42,
+    insideZ: 20.4 * CELL,
+    exitX: 9.0 * CELL + 1.48,
+    exitZ: 20.4 * CELL,
+  },
+  {
+    id: 'hide-nex-tunnel',
+    name: '保守作業員ロッカー（5・6番線 N\'EX 連絡地下道奥）',
+    kind: 'locker',
+    x: 22.0 * CELL + 0.48,
+    z: 21.5 * CELL,
+    rotY: Math.PI / 2,
+    insideX: 22.0 * CELL + 0.42,
+    insideZ: 21.5 * CELL,
+    exitX: 22.0 * CELL + 1.48,
+    exitZ: 21.5 * CELL,
   },
   {
     id: 'hide-central-east',
-    name: '大型コインロッカー（東口・ルミネエスト連絡通路）',
+    name: '大型コインロッカー（東口地下広場・ルミネエストB1F）',
     kind: 'locker',
-    x: 20.0 * CELL - 0.48,
-    z: 8.5 * CELL,
+    x: 34.0 * CELL - 0.48,
+    z: 13.5 * CELL,
     rotY: -Math.PI / 2,
-    insideX: 20.0 * CELL - 0.42,
-    insideZ: 8.5 * CELL,
-    exitX: 20.0 * CELL - 1.48,
-    exitZ: 8.5 * CELL,
+    insideX: 34.0 * CELL - 0.42,
+    insideZ: 13.5 * CELL,
+    exitX: 34.0 * CELL - 1.48,
+    exitZ: 13.5 * CELL,
   },
 ];
 
@@ -324,60 +448,74 @@ export const LORE_NOTES: LoreNoteDef[] = [
     id: 'note-office',
     title: '新宿駅 地下みどりの窓口・当直日誌',
     date: '11月19日 00:26',
-    x: 11.2 * CELL,
+    x: 15.2 * CELL,
     y: 0.86,
-    z: 6.2 * CELL,
+    z: 11.2 * CELL,
     rotY: 0.35,
     lines: [
-      '00:15 山手線・中央線・総武線 終電発車確認。東口・西口地上出口シャッター閉鎖。',
-      '00:22 「新宿ウォール456」と柱の「J・ADビジョン」が全て紫のうさぎに切り替わり、直後に展示台が空に。',
-      '00:24 東口（歌舞伎町方面）非常シャッターは、構内5か所のチャージ機で残高¥1,000を認証しないと開かない。',
-      'チャージ音が鳴ると奴は改札を抜けて猛スピードで飛んでくる。隠れたら【息を止めろ】([Space])。ライトも消せ。',
+      '00:15 山手線・中央線・埼京線・丸ノ内線・小田急・京王 全線終電発車確認。全地上出口シャッター閉鎖。',
+      '00:22 「新宿ウォール456」と10本の「J・ADビジョン」光柱が全て紫のうさぎに切り替わり、直後に展示台が空に。',
+      '00:24 東口（歌舞伎町方面）非常シャッターは、構内5か所のSuicaチャージ機で残高¥1,000を認証しないと開かない。',
+      'チャージ音が鳴ると奴は改札もメトロプロムナードも突き抜けて走ってくる。隠れたら【息を止めろ】([Space])。',
+    ],
+  },
+  {
+    id: 'note-metro',
+    title: '東京メトロ メトロプロムナード 警備員のメモ',
+    date: '11月19日 00:31',
+    x: 12.2 * CELL,
+    y: 0.03,
+    z: 2.7 * CELL,
+    rotY: 0.25,
+    lines: [
+      '丸ノ内線(M08)改札の赤い照明の下を、2メートルの紫の影が西口地下広場へ向かって歩いていった。',
+      '西口ロータリーの吹き抜け天井から雨音が響いているのに、地上へ上がる階段は全て封鎖されている。',
+      '小田急線と京王線の連絡改札はガラス越しに真っ暗だった。引き返そうとしたら、円柱の陰から耳が覗いていた。',
     ],
   },
   {
     id: 'note-bench',
     title: '改札内コンコース 13・14番線階段前の手帳',
     date: '日付不明',
-    x: 8.6 * CELL,
+    x: 12.6 * CELL,
     y: 0.55,
-    z: 8.5 * CELL,
+    z: 13.5 * CELL,
     rotY: 0.35,
     lines: [
-      '新宿駅の地下は東西自由通路と中央通路が7〜16番線の階段で繋がっている。',
-      'J・ADビジョンの光柱の陰から、紫の大きな耳が半分だけ覗いていた。懐中電灯を当てた瞬間、照明が端から順番に破裂した。',
-      '硬貨([G])を遠くへ投げれば音のほうへ走る。西口連絡通路の公衆電話が鳴っても、絶対に出るな。',
+      '新宿駅の地下は北のメトロプロムナード、東西自由通路、中央通路、そして1〜16番線まで巨大な迷宮だ。',
+      '懐中電灯を奴に当てた瞬間、天井のLEDが端から順番に火花を散らして破裂した。',
+      '硬貨([G])を遠くへ投げれば音のほうへ走る。西口広場の公衆電話が鳴っても、絶対に出るな。',
+    ],
+  },
+  {
+    id: 'note-nex',
+    title: '5・6番線 成田エクスプレス(N\'EX) 連絡地下道の作業日報',
+    date: '11月19日 00:39',
+    x: 23.6 * CELL,
+    y: 0.03,
+    z: 21.4 * CELL,
+    rotY: -0.5,
+    lines: [
+      '7・8番線のさらに南東に延びる5・6番線連絡地下道は、深夜になると誰の声も届かない。',
+      '1〜4番線（埼京線・湘南新宿ライン）の階段下から、重いぬいぐるみが湿った床を這う音が聞こえた。',
+      'ここは袋小路だ。奥の保守ロッカーに隠れられるが、追い詰められたら息を止めてやり過ごすしかない。',
     ],
   },
   {
     id: 'note-newdays',
-    title: 'NewDays 新宿（東口改札外）シャッター貼紙',
+    title: 'NewDays 新宿（東口ルミネエスト連絡通路）シャッター貼紙',
     date: '11月19日 深夜',
-    x: 19.0 * CELL + 0.06,
+    x: 31.0 * CELL + 0.08,
     y: 1.38,
-    z: 5.8 * CELL,
+    z: 12.2 * CELL,
     rotY: Math.PI / 2,
     vertical: true,
     lines: [
       '【緊急】東口・地上出口（歌舞伎町・アルタ方面）強制解錠手順',
-      '1. 地下みどりの窓口横 きっぷうりば / 2. 西改札前（西口広場）',
-      '3. 改札内 13・14番線階段横 精算所 / 4. 中央西改札 / 5. 中央東改札',
+      '1. みどりの窓口横 きっぷうりば / 2. 丸ノ内線メトロプロムナード',
+      '3. 西口広場・小田急/京王連絡 / 4. 改札内13・14番線 / 5. 中央通路1〜4番線横',
       '5か所すべてでSuicaチャージし ¥1,000 に到達すると、東口非常ゲートの緑ランプが点灯する。',
-      '※13・14番線や15・16番線から電車の音が聴こえても、終電はもう終わっている。階段を上がるな。',
-    ],
-  },
-  {
-    id: 'note-metro',
-    title: '中央通路 清掃員のメモ',
-    date: '11月19日 00:34',
-    x: 10.5 * CELL,
-    y: 0.03,
-    z: 12.2 * CELL,
-    rotY: -0.45,
-    lines: [
-      '中央通路の証明写真機のカーテンの中でストロボが光った。誰も入っていないのに。',
-      'ロッカーに隠れている時、扉のスリットのすぐ向こうに奴の赤い目が見えた。',
-      '[Space]（スマホは「息を止める」）を押し続けて息を殺したら、扉を引っ掻いて去っていった。息を切らすな。',
+      '※13〜16番線や1〜4番線から電車の轟音が聴こえても、終電は終わっている。絶対に階段を上がるな。',
     ],
   },
 ];
@@ -390,30 +528,42 @@ export interface CoinDef {
 }
 
 export const COINS: CoinDef[] = [
-  { id: 'coin-1', x: 11.5 * CELL, y: 0.02, z: 2.2 * CELL },
-  { id: 'coin-2', x: 3.5 * CELL, y: 0.02, z: 6.5 * CELL },
-  { id: 'coin-3', x: 11.5 * CELL, y: 0.02, z: 8.5 * CELL },
-  { id: 'coin-4', x: 14.5 * CELL, y: 0.02, z: 11.8 * CELL },
+  { id: 'coin-1', x: 18.5 * CELL, y: 0.02, z: 7.4 * CELL },
+  { id: 'coin-2', x: 15.5 * CELL, y: 0.02, z: 3.3 * CELL },
+  { id: 'coin-3', x: 3.5 * CELL, y: 0.02, z: 9.5 * CELL },
+  { id: 'coin-4', x: 12.5 * CELL, y: 0.02, z: 15.2 * CELL },
+  { id: 'coin-5', x: 26.5 * CELL, y: 0.02, z: 17.2 * CELL },
+  { id: 'coin-6', x: 32.2 * CELL, y: 0.02, z: 16.5 * CELL },
 ];
 
 export const PATROL_WAYPOINTS: Array<{ x: number; z: number }> = [
-  { x: 16.5 * CELL, z: 2.2 * CELL }, // 東西自由通路 東口・アルプス広場
-  { x: 11.0 * CELL, z: 2.2 * CELL }, // 東西自由通路 新宿ウォール456中央
-  { x: 5.5 * CELL, z: 2.2 * CELL },  // 東西自由通路 西改札前
-  { x: 4.5 * CELL, z: 6.5 * CELL },  // 西改札内 15・16番線前
-  { x: 8.5 * CELL, z: 8.5 * CELL },  // 改札内中央 13・14 / 11・12番線間
-  { x: 16.5 * CELL, z: 6.5 * CELL }, // 東改札内 7・8番線前
-  { x: 16.5 * CELL, z: 11.5 * CELL }, // 中央通路 東側 (中央東改札前)
-  { x: 10.5 * CELL, z: 11.8 * CELL }, // 中央通路 中央
-  { x: 4.5 * CELL, z: 11.5 * CELL },  // 中央通路 西側 (中央西改札前)
-  { x: 1.5 * CELL, z: 8.5 * CELL },   // 西口地下連絡通路
-  { x: 19.5 * CELL, z: 8.5 * CELL },  // 東口・ルミネエスト連絡通路
+  { x: 27.5 * CELL, z: 7.5 * CELL },  // アルプス広場・東口
+  { x: 16.5 * CELL, z: 7.2 * CELL },  // 東西自由通路 新宿ウォール456中央
+  { x: 8.5 * CELL, z: 7.5 * CELL },   // 西改札前
+  { x: 3.5 * CELL, z: 7.2 * CELL },   // 新宿西口地下広場 ロータリー
+  { x: 4.5 * CELL, z: 15.5 * CELL },  // 小田急・京王連絡コンコース
+  { x: 11.5 * CELL, z: 3.0 * CELL },  // メトロプロムナード 丸ノ内線西改札前
+  { x: 23.5 * CELL, z: 3.0 * CELL },  // メトロプロムナード 丸ノ内線東改札前
+  { x: 9.5 * CELL, z: 11.5 * CELL },  // JR西改札内 15・16番線前
+  { x: 14.5 * CELL, z: 13.5 * CELL }, // JR改札内 11・12番線間
+  { x: 20.5 * CELL, z: 11.5 * CELL }, // JR東改札内 7・8番線前
+  { x: 26.5 * CELL, z: 15.5 * CELL }, // JR改札内 1〜4番線（埼京・湘南新宿）
+  { x: 23.5 * CELL, z: 19.5 * CELL }, // 5・6番線 N'EX連絡地下道入口
+  { x: 16.5 * CELL, z: 17.2 * CELL }, // 中央通路 中央
+  { x: 8.5 * CELL, z: 17.2 * CELL },  // 中央通路 中央西改札前
+  { x: 29.5 * CELL, z: 17.2 * CELL }, // 中央通路 中央東改札前
+  { x: 32.0 * CELL, z: 12.5 * CELL }, // 東口地下広場・ルミネエストB1F
 ];
 
 export const PEEK_PILLARS: Array<{ x: number; z: number }> = [
-  { x: 6.5 * CELL, z: 3.5 * CELL },
-  { x: 8.5 * CELL, z: 3.5 * CELL },
-  { x: 10.5 * CELL, z: 3.5 * CELL },
-  { x: 12.5 * CELL, z: 3.5 * CELL },
-  { x: 14.5 * CELL, z: 3.5 * CELL },
+  { x: 11.5 * CELL, z: 8.5 * CELL },
+  { x: 13.5 * CELL, z: 8.5 * CELL },
+  { x: 15.5 * CELL, z: 8.5 * CELL },
+  { x: 17.5 * CELL, z: 8.5 * CELL },
+  { x: 19.5 * CELL, z: 8.5 * CELL },
+  { x: 21.5 * CELL, z: 8.5 * CELL },
+  { x: 4.5 * CELL, z: 8.5 * CELL },
+  { x: 14.5 * CELL, z: 2.5 * CELL },
+  { x: 18.5 * CELL, z: 2.5 * CELL },
+  { x: 27.5 * CELL, z: 2.5 * CELL },
 ];

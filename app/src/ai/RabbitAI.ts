@@ -298,7 +298,7 @@ export class RabbitAI {
 
   updateTitleShowcase(dt: number, elapsed: number): void {
     if (!this.loaded || !this.mixer) return;
-    this.root.position.set(46.8, 0, 10.1);
+    this.root.position.set(62.8, 0, 30.1);
     this.root.rotation.y = -Math.PI * 0.56 + Math.sin(elapsed * 0.34) * 0.22;
     this.jumpscareLight.intensity = 0;
     if (elapsed % 16 < 10) this.playClip('Sit', 0.5, 0.42);

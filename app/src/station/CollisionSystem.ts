@@ -60,12 +60,31 @@ export class CollisionSystem {
             opaque: false,
           });
         } else if (cell === 4) {
-          // JR Shinjuku Platform 7-16 Ascending Staircase Block
+          // JR Shinjuku Platform 1-16 Ascending Staircase & Escalator Block
           this.colliders.push({
-            minX: x0 + 0.18,
-            maxX: x0 + CELL - 0.18,
+            minX: x0 + 0.16,
+            maxX: x0 + CELL - 0.16,
             minZ: z0 + 0.14,
             maxZ: z0 + CELL - 0.14,
+            opaque: false,
+          });
+        } else if (cell === 5) {
+          // West Plaza / Metro Promenade / East Plaza Cylindrical Structural Column (D = 1.56m)
+          const pad = (CELL - 1.56) * 0.5;
+          this.colliders.push({
+            minX: x0 + pad,
+            maxX: x0 + CELL - pad,
+            minZ: z0 + pad,
+            maxZ: z0 + CELL - pad,
+            opaque: true,
+          });
+        } else if (cell === 6) {
+          // Tokyo Metro Marunouchi M08 / Odakyu OH01 / Keio KO01 Glass Gate Concourse Partition (transparent LOS!)
+          this.colliders.push({
+            minX: x0,
+            maxX: x0 + CELL,
+            minZ: z0,
+            maxZ: z0 + CELL,
             opaque: false,
           });
         }
@@ -81,11 +100,11 @@ export class CollisionSystem {
       opaque: false,
     });
 
-    // East Exit (歌舞伎町・アルタ方面 地上出口) side gate banks along x = GATE_LINE_X
+    // East Exit (歌舞伎町・アルタ方面 地上出口) side gate banks along x = GATE_LINE_X (R6..R8 -> z = 24m..36m)
     this.colliders.push({
       minX: GATE_LINE_X - 0.68,
       maxX: GATE_LINE_X + 0.68,
-      minZ: 1.0 * CELL,
+      minZ: 6.0 * CELL,
       maxZ: GATE_LINE_Z - 1.35,
       opaque: false,
     });
@@ -93,7 +112,7 @@ export class CollisionSystem {
       minX: GATE_LINE_X - 0.68,
       maxX: GATE_LINE_X + 0.68,
       minZ: GATE_LINE_Z + 1.35,
-      maxZ: 4.0 * CELL,
+      maxZ: 9.0 * CELL,
       opaque: false,
     });
 
@@ -107,21 +126,21 @@ export class CollisionSystem {
       opaque: false,
     });
 
-    // Midori-no-Madoguchi interior counter desk
+    // Midori-no-Madoguchi interior counter desk (inside R11 behind glass at C13..15)
     this.colliders.push({
-      minX: 11.2 * CELL - 1.2,
-      maxX: 11.2 * CELL + 1.2,
-      minZ: 6.2 * CELL - 0.45,
-      maxZ: 6.2 * CELL + 0.45,
+      minX: 15.2 * CELL - 1.2,
+      maxX: 15.2 * CELL + 1.2,
+      minZ: 11.2 * CELL - 0.45,
+      maxZ: 11.2 * CELL + 0.45,
       opaque: false,
     });
 
-    // Inside-gate waiting bench (between 13・14 and 11・12 stairs)
+    // Inside-gate waiting bench (between 13・14 and 11・12 stairs at R13)
     this.colliders.push({
-      minX: 8.6 * CELL - 1.4,
-      maxX: 8.6 * CELL + 1.4,
-      minZ: 8.5 * CELL - 0.35,
-      maxZ: 8.5 * CELL + 0.35,
+      minX: 12.6 * CELL - 1.4,
+      maxX: 12.6 * CELL + 1.4,
+      minZ: 13.5 * CELL - 0.35,
+      maxZ: 13.5 * CELL + 0.35,
       opaque: false,
     });
   }
@@ -215,7 +234,7 @@ export function findGridPath(
         }
       }
     }
-    return { col: 11, row: 2 };
+    return { col: 15, row: 7 };
   };
 
   const sCell = clampWalkable(s);
@@ -253,7 +272,7 @@ export function findGridPath(
 
   let found: Node | null = null;
   let steps = 0;
-  while (open.length > 0 && steps++ < 480) {
+  while (open.length > 0 && steps++ < 1600) {
     open.sort((a, b) => a.f - b.f);
     const cur = open.shift()!;
     if (cur.c === gCell.col && cur.r === gCell.row) {
