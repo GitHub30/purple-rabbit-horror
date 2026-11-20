@@ -66,6 +66,7 @@ class ShinjukuHorrorGame {
   private dynamicFovKick = 0;
   private phantomTimer = 22;
   private phantomTrainCooldown = 18;
+  private wall456SubliminalCooldown = 14;
   private photoBoothTriggered = false;
   private payphoneTriggered = false;
   private payphoneRingTimer = 0;
@@ -92,20 +93,20 @@ class ShinjukuHorrorGame {
     this.renderer.toneMapping = THREE.NoToneMapping; // Handled in HDR PostFX ACES pass!
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0b1016);
-    this.scene.fog = new THREE.FogExp2(0x0b1016, 0.024);
+    this.scene.background = new THREE.Color(0x060a0f);
+    this.scene.fog = new THREE.FogExp2(0x060a0f, 0.032);
     this.scene.environment = createShinjukuEnvMap(this.renderer);
 
     const aspect = window.innerWidth / Math.max(1, window.innerHeight);
     this.camera = new THREE.PerspectiveCamera(this.computeFov(aspect), aspect, 0.08, 86);
     this.postFX = new PostFX(this.renderer, window.innerWidth, window.innerHeight, dpr);
 
-    // Photorealistic subterranean bounce fill matching Shinjuku's white linear ceiling & granite floor
-    this.ambientHemi = new THREE.HemisphereLight(0xdce6ec, 0x38424c, 0.78);
+    // Authentic 00:47 after-last-train midnight subterranean fill (glare-free, deep horror shadows!)
+    this.ambientHemi = new THREE.HemisphereLight(0x8ca2b4, 0x161d24, 0.34);
     this.scene.add(this.ambientHemi);
 
-    // Dramatic title showcase raking spotlight on the 2.2m purple rabbit in 東西自由通路!
-    this.titleLight = new THREE.SpotLight(0xedf8f5, 32, 24, Math.PI * 0.32, 0.62, 1.25);
+    // Moody chiaroscuro title showcase spotlight on the 2.2m purple rabbit in 東西自由通路!
+    this.titleLight = new THREE.SpotLight(0xdcece8, 16, 22, Math.PI * 0.28, 0.68, 1.4);
     this.titleLight.position.set(43.2, 3.4, 8.2);
     this.titleLight.target.position.set(46.8, 1.25, 10.1);
     this.scene.add(this.titleLight, this.titleLight.target);
@@ -144,7 +145,7 @@ class ShinjukuHorrorGame {
       },
       onBrightnessChange: (v) => {
         this.brightnessMult = v;
-        this.ambientHemi.intensity = 0.78 * v;
+        this.ambientHemi.intensity = 0.34 * v;
       },
       onTouchModeChange: (m) => this.player.setTouchUIMode(m),
       onQualityChange: (q) => this.postFX.setQuality(q),
@@ -322,6 +323,7 @@ class ShinjukuHorrorGame {
     this.dynamicFovKick = 0;
     this.phantomTimer = 20;
     this.phantomTrainCooldown = 16;
+    this.wall456SubliminalCooldown = 14;
     this.photoBoothTriggered = false;
     this.payphoneTriggered = false;
     this.payphoneRingTimer = 0;
@@ -354,6 +356,10 @@ class ShinjukuHorrorGame {
 
   togglePause(): void {
     if (this.screen === 'PLAYING') {
+      if (this.hud.mapOpen) {
+        this.hud.toggleMap();
+        return;
+      }
       this.screen = 'PAUSED';
       this.player.setActive(false);
       this.hud.setScreen('PAUSED');
@@ -383,7 +389,7 @@ class ShinjukuHorrorGame {
   returnToTitle(): void {
     this.screen = 'TITLE';
     this.player.setActive(false);
-    this.titleLight.intensity = 28;
+    this.titleLight.intensity = 16;
     this.currentFear = 0;
     this.currentChase = 0;
     this.glitchPulse = 0;
@@ -446,7 +452,7 @@ class ShinjukuHorrorGame {
       fear: isTitle ? 0.14 : isJump ? 1 : this.currentFear,
       chase: isTitle ? 0 : isJump ? 1 : this.currentChase,
       glitch: isJump ? 0.94 : this.glitchPulse,
-      exposure: this.brightnessMult * 1.18,
+      exposure: this.brightnessMult * 1.02,
       heartbeat: isTitle ? 0 : this.sound.getHeartbeatPulse(),
       autoIso: this.autoIso,
       breathFog: this.breathFog,
@@ -473,7 +479,7 @@ class ShinjukuHorrorGame {
       this.camera.position.set(41.2, 1.56 + Math.sin(this.totalElapsed * 0.7) * 0.04, 8.7 + sway * 0.42);
       this.camera.lookAt(52.0, 1.26, 10.8);
     }
-    this.titleLight.intensity = 28 * (Math.sin(this.totalElapsed * 29) > 0.91 ? 0.35 : 1);
+    this.titleLight.intensity = 16 * (Math.sin(this.totalElapsed * 29) > 0.9 ? 0.3 : 1);
     this.player.hideFlashlight();
   }
 
@@ -736,6 +742,27 @@ class ShinjukuHorrorGame {
         if (Math.random() < 0.58) this.sound.playPhantomWhisper(side);
         else this.sound.playPhantomScare(side * 0.85);
       }
+    }
+
+    // 5. Shinjuku Wall 456 subliminal crimson shock flash while walking the East-West Passage
+    this.wall456SubliminalCooldown -= dt;
+    if (
+      this.wall456SubliminalCooldown <= 0 &&
+      this.chargesCompleted >= 1 &&
+      !isChasing &&
+      !this.player.hiddenCloset &&
+      this.player.position.z < 15.5 &&
+      this.player.position.x > 18 &&
+      this.player.position.x < 66
+    ) {
+      this.wall456SubliminalCooldown = 24 + Math.random() * 18;
+      this.station.triggerWall456SubliminalFlash();
+      this.sound.playStareChill();
+      this.glitchPulse = Math.max(this.glitchPulse, 0.55);
+      this.hud.showSubtitle(
+        '……今、新宿ウォール456の映像が一瞬赤く歪んだ……誰かの目がこっちを見ていた……',
+        4.4
+      );
     }
   }
 

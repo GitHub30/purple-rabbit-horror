@@ -97,6 +97,11 @@ export interface ShinjukuTextureSet {
   newDaysShutter: THREE.CanvasTexture;
   vendingFront: THREE.CanvasTexture;
   ticketMachineFront: THREE.CanvasTexture;
+  chargeMachineHeader: THREE.CanvasTexture;
+  chargeMachineLowerDeck: THREE.CanvasTexture;
+  turnstileFrontArrow: THREE.CanvasTexture;
+  barricadePanel: THREE.CanvasTexture;
+  fireAlarmBox: THREE.CanvasTexture;
   fareTableHeader: THREE.CanvasTexture;
   fareAdjustFront: THREE.CanvasTexture;
   fareAdjustSign: THREE.CanvasTexture;
@@ -178,6 +183,11 @@ export function createShinjukuTextures(): ShinjukuTextureSet {
     newDaysShutter: buildNewDaysShutter(),
     vendingFront: buildAcureVending(),
     ticketMachineFront: buildTicketMachines(),
+    chargeMachineHeader: buildChargeMachineHeader(),
+    chargeMachineLowerDeck: buildChargeMachineLowerDeck(),
+    turnstileFrontArrow: buildTurnstileFrontArrow(),
+    barricadePanel: buildBarricadePanel(),
+    fireAlarmBox: buildFireAlarmBox(),
     fareTableHeader: buildFareTableHeader(),
     fareAdjustFront: buildFareAdjustmentMachines(),
     fareAdjustSign: buildFareAdjustSign(),
@@ -392,43 +402,55 @@ function buildShinjukuTerrazzo() {
       nCtx.fillStyle = `rgb(${hv | 0},${hv | 0},${hv | 0})`;
       nCtx.fillRect(x / 2 + 1, y / 2 + 1, step / 2 - 2, step / 2 - 2);
 
-      // Honed satin-polished granite roughness ~0.32-0.46 so Shinjuku Wall 456 & J-AD Vision reflect softly!
-      const rv = (isDarkTile ? 88 : 98) + (rnd() - 0.5) * 18;
+      // Honed natural granite roughness ~0.46-0.62 (authentic Tokyo commuter satin sheen without harsh glare!)
+      const rv = (isDarkTile ? 122 : 136) + (rnd() - 0.5) * 20;
       rCtx.fillStyle = `rgb(${rv | 0},${rv | 0},${rv | 0})`;
       rCtx.fillRect(x / 2 + 1, y / 2 + 1, step / 2 - 2, step / 2 - 2);
     }
   }
 
-  // Fine natural granite quartz/feldspar/biotite crystal speckle
-  for (let i = 0; i < 16000; i++) {
+  // Fine natural granite quartz/feldspar/biotite crystal speckle + subtle commuter foot scuffing
+  for (let i = 0; i < 20000; i++) {
     const fx = rnd() * 1024;
     const fy = rnd() * 1024;
     const p = rnd();
-    const col = p > 0.68 ? 202 : p > 0.34 ? 146 : 74;
-    const sz = p > 0.88 ? 2.6 : 1.6;
-    ctx.fillStyle = `rgba(${col},${col - 2},${col - 6},${0.16 + rnd() * 0.24})`;
+    const col = p > 0.7 ? 190 : p > 0.34 ? 136 : 64;
+    const sz = p > 0.88 ? 2.5 : 1.5;
+    ctx.fillStyle = `rgba(${col},${col - 2},${col - 5},${0.16 + rnd() * 0.24})`;
     ctx.fillRect(fx, fy, sz, sz);
   }
 
-  // Subtle glossy moisture/wax sheen variations
+  // Subtle midnight dampness & foot-traffic patina near joints
+  for (let i = 0; i < 18; i++) {
+    const px = rnd() * 1024;
+    const py = rnd() * 1024;
+    const rad = 45 + rnd() * 110;
+    const dg = ctx.createRadialGradient(px, py, 8, px, py, rad);
+    dg.addColorStop(0, 'rgba(32, 34, 36, 0.14)');
+    dg.addColorStop(1, 'rgba(32, 34, 36, 0)');
+    ctx.fillStyle = dg;
+    ctx.fillRect(px - rad, py - rad, rad * 2, rad * 2);
+  }
+
+  // Subtle satin moisture/wax sheen variations (toned down so lights don't blow out into mirrors)
   for (let i = 0; i < 14; i++) {
     const px = rnd() * 512;
     const py = rnd() * 512;
     const rad = 36 + rnd() * 82;
     const g = rCtx.createRadialGradient(px, py, 6, px, py, rad);
-    g.addColorStop(0, 'rgba(18,18,18,0.88)');
-    g.addColorStop(0.55, 'rgba(42,42,42,0.72)');
-    g.addColorStop(1, 'rgba(110,110,110,0)');
+    g.addColorStop(0, 'rgba(62,62,62,0.72)');
+    g.addColorStop(0.55, 'rgba(92,92,92,0.52)');
+    g.addColorStop(1, 'rgba(130,130,130,0)');
     rCtx.fillStyle = g;
     rCtx.fillRect(px - rad, py - rad, rad * 2, rad * 2);
   }
 
   // Crisp thin mortar seams (soft bevel normal to avoid grazing aliasing)
-  ctx.strokeStyle = 'rgba(58,56,52,0.82)';
+  ctx.strokeStyle = 'rgba(48,46,42,0.86)';
   ctx.lineWidth = 3;
-  nCtx.strokeStyle = '#a8a8a8';
+  nCtx.strokeStyle = '#a4a4a4';
   nCtx.lineWidth = 1.4;
-  rCtx.strokeStyle = '#dcdcdc';
+  rCtx.strokeStyle = '#e0e0e0';
   rCtx.lineWidth = 2.0;
   for (let i = 0; i <= 1024; i += step) {
     ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 1024); ctx.stroke();
@@ -441,7 +463,7 @@ function buildShinjukuTerrazzo() {
 
   return {
     color: toTex(c, 21, 15, true),
-    normal: heightToNormal(nC, 0.72, 21, 15),
+    normal: heightToNormal(nC, 0.76, 21, 15),
     roughness: toTex(rC, 21, 15, false),
   };
 }
@@ -453,7 +475,7 @@ function buildShinjukuCeiling() {
   const [nC, nCtx] = makeCanvas(256, 256);
   const rnd = mulberry32(5151);
 
-  ctx.fillStyle = '#d6d4cd';
+  ctx.fillStyle = '#c8c6be';
   ctx.fillRect(0, 0, 512, 512);
   nCtx.fillStyle = '#c0c0c0';
   nCtx.fillRect(0, 0, 256, 256);
@@ -461,22 +483,22 @@ function buildShinjukuCeiling() {
   // White matte linear spandrel panels running East-West (every 32px)
   for (let y = 0; y < 512; y += 32) {
     const d = Math.floor((rnd() - 0.5) * 6);
-    ctx.fillStyle = `rgb(${216 + d},${214 + d},${207 + d})`;
+    ctx.fillStyle = `rgb(${202 + d},${200 + d},${194 + d})`;
     ctx.fillRect(0, y + 3, 512, 27);
     // Fine dark recessed reveal seam between strips
-    ctx.fillStyle = '#7e7c76';
+    ctx.fillStyle = '#6c6a64';
     ctx.fillRect(0, y, 512, 3);
 
     nCtx.fillStyle = '#e4e4e4';
     nCtx.fillRect(0, y / 2 + 2, 256, 13);
-    nCtx.fillStyle = '#585858';
+    nCtx.fillStyle = '#525252';
     nCtx.fillRect(0, y / 2, 256, 2);
   }
 
   // Transverse expansion joint track & maintenance ceiling hatch outline (matching shinjuku_tr_BBEABFFC.png)
-  ctx.fillStyle = '#545658';
+  ctx.fillStyle = '#484a4d';
   ctx.fillRect(0, 0, 10, 512);
-  ctx.fillStyle = '#9a9892';
+  ctx.fillStyle = '#8c8a84';
   ctx.fillRect(10, 0, 6, 512);
   ctx.strokeStyle = 'rgba(110,110,106,0.75)';
   ctx.lineWidth = 2.5;
@@ -529,38 +551,37 @@ function buildTactileNormal(): THREE.CanvasTexture {
 }
 
 // 45.6m Ultra-Wide LED Video Wall 『新宿ウォール456』(Shinjuku Wall 456) — 5 Progressive Horror Stages!
-// Compare directly with panasonic_wall456.jpg, jeki_wall456.jpg, panasonic_pdf.pdf, jeki_slides.pdf Page 2, 3, 5
+// Rich velvety twilight colors calibrated so LED artwork & "WELCOME TO SHINJUKU" stay crystal-clear without bloom glare!
 function buildShinjukuWall456(stage: number): THREE.CanvasTexture {
   const [c, ctx] = makeCanvas(2048, 256);
 
   if (stage === 0 || stage === 1) {
-    // Moment Factory "新宿カラーバス" flowing pastel cyan / royal-blue / lavender / pink silk waves!
     const bg = ctx.createLinearGradient(0, 0, 2048, 256);
     if (stage === 0) {
-      bg.addColorStop(0.0, '#1ec8e8');
-      bg.addColorStop(0.22, '#4a88f4');
-      bg.addColorStop(0.48, '#d4b8f8');
-      bg.addColorStop(0.74, '#f098d8');
-      bg.addColorStop(1.0, '#2ad4e8');
+      bg.addColorStop(0.0, '#0d4e74');
+      bg.addColorStop(0.24, '#1c428c');
+      bg.addColorStop(0.5, '#4c2c82');
+      bg.addColorStop(0.76, '#842e72');
+      bg.addColorStop(1.0, '#105078');
     } else {
-      bg.addColorStop(0.0, '#186498');
-      bg.addColorStop(0.3, '#4c2c88');
-      bg.addColorStop(0.6, '#7a2878');
-      bg.addColorStop(1.0, '#1a4c78');
+      bg.addColorStop(0.0, '#0b2f4e');
+      bg.addColorStop(0.3, '#2d1858');
+      bg.addColorStop(0.6, '#4d144a');
+      bg.addColorStop(1.0, '#0d2a46');
     }
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, 2048, 256);
 
-    // Flowing translucent silk ribbons across the 45.6m canvas (matching panasonic_wall456.jpg!)
+    // Flowing translucent Moment Factory silk ribbons across the 45.6m canvas
     for (let w = 0; w < 7; w++) {
       ctx.beginPath();
-      const yBase = 48 + w * 26;
+      const yBase = 52 + w * 25;
       ctx.moveTo(0, yBase);
       for (let x = 0; x <= 2048; x += 64) {
         const y =
           yBase +
-          Math.sin(x * 0.0045 + w * 1.1) * 48 +
-          Math.cos(x * 0.009 - w * 0.7) * 24;
+          Math.sin(x * 0.0045 + w * 1.1) * 44 +
+          Math.cos(x * 0.009 - w * 0.7) * 22;
         ctx.lineTo(x, y);
       }
       ctx.lineTo(2048, 256);
@@ -568,15 +589,19 @@ function buildShinjukuWall456(stage: number): THREE.CanvasTexture {
       ctx.closePath();
       ctx.fillStyle =
         w % 2 === 0
-          ? 'rgba(255, 255, 255, 0.24)'
+          ? stage === 0
+            ? 'rgba(72, 188, 232, 0.17)'
+            : 'rgba(92, 54, 152, 0.20)'
           : stage === 0
-            ? 'rgba(238, 128, 212, 0.26)'
-            : 'rgba(130, 32, 168, 0.34)';
+            ? 'rgba(208, 96, 184, 0.17)'
+            : 'rgba(128, 24, 96, 0.24)';
       ctx.fill();
     }
 
-    // Center "WELCOME TO SHINJUKU / ようこそ 新宿" typography (matching panasonic_wall456.jpg & jeki_slides.pdf Page 5!)
-    ctx.fillStyle = 'rgba(255,255,255,0.94)';
+    // Center "WELCOME TO SHINJUKU / ようこそ 新宿" crisp typography with subtle drop shadow
+    ctx.shadowColor = 'rgba(6, 10, 22, 0.72)';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = 'rgba(232, 242, 248, 0.92)';
     ctx.textAlign = 'center';
     ctx.font = '600 26px sans-serif';
     ctx.fillText('WELCOME TO', 720, 102);
@@ -587,6 +612,7 @@ function buildShinjukuWall456(stage: number): THREE.CanvasTexture {
     ctx.fillText('ようこそ', 1320, 102);
     ctx.font = '700 60px sans-serif';
     ctx.fillText('新 宿', 1320, 164);
+    ctx.shadowBlur = 0;
 
     // JR East / Shinjuku Ward info & mascot exhibition frames on left & right ends
     ctx.fillStyle = 'rgba(16, 26, 38, 0.78)';
@@ -1267,47 +1293,383 @@ function buildAcureVending(): THREE.CanvasTexture {
   return toTex(c, 1, 1, true);
 }
 
-// Recessed Ticket Vending Machines in きっぷうりば (matching shunkosha_jad.jpg & bizpa_jad.jpg: green Suica machines + blue Reserved-Seat MV machines!)
+// Authentic JR East 交通系IC Mark helper (red 'IC' with gold stylized rail badge, matching user reference Screenshot_20261120-100223.png!)
+function drawICBadge(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
+  ctx.fillStyle = '#f6f7f5';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#9a8068';
+  ctx.fillRect(x + w * 0.14, y + h * 0.24, w * 0.18, h * 0.56);
+  ctx.fillStyle = '#d41b24';
+  ctx.font = `900 ${Math.round(h * 0.62)}px sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.fillText('IC', x + w * 0.36, y + h * 0.78);
+}
+
+// Recessed Ticket Vending Machines in きっぷうりば — matching Screenshot_20261120-100223.png:
+// 2x JR Green 自動券売機 (きっぷ・チャージ), 1x Dark Slate 多機能券売機 (定期券・Suica・きっぷ・チャージ), 1x JR Blue 指定席券売機!
 function buildTicketMachines(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(1024, 512);
+  ctx.fillStyle = '#d4d8da';
+  ctx.fillRect(0, 0, 1024, 512);
+
+  const units: Array<{
+    kind: 'green' | 'multi' | 'mv';
+    title: string;
+    sub: string;
+  }> = [
+    { kind: 'green', title: 'きっぷ・チャージ', sub: 'Tickets / Charge' },
+    { kind: 'green', title: 'きっぷ・チャージ', sub: 'Tickets / Charge' },
+    { kind: 'multi', title: '定期券・Suica', sub: 'Commuter Pass / Charge' },
+    { kind: 'mv', title: '指定席券売機', sub: 'Reserved Seat Tickets' },
+  ];
+
+  units.forEach((u, i) => {
+    const x = 18 + i * 248;
+    const w = 232;
+    // Brushed pearl-silver stainless housing
+    const bodyG = ctx.createLinearGradient(x, 0, x + w, 0);
+    bodyG.addColorStop(0, '#c8ced2');
+    bodyG.addColorStop(0.5, '#dde1e4');
+    bodyG.addColorStop(1, '#bcc2c6');
+    ctx.fillStyle = bodyG;
+    ctx.fillRect(x, 18, w, 476);
+    ctx.strokeStyle = '#6c7278';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, 18, w, 476);
+
+    const topCol = u.kind === 'green' ? '#1c9638' : u.kind === 'multi' ? '#464a50' : '#185296';
+    const subCol = u.kind === 'green' ? '#6ac042' : u.kind === 'multi' ? '#8c929a' : '#3a78c2';
+    const leftCol = u.kind === 'green' ? '#6cc044' : u.kind === 'multi' ? '#70767e' : '#2a64ad';
+
+    // Top fascia header (exact split layout from JR East Screenshot_20261120-100223.png!)
+    ctx.fillStyle = leftCol;
+    ctx.fillRect(x + 4, 22, 54, 106);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'italic 900 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('JR', x + 31, 48);
+    drawICBadge(ctx, x + 11, 58, 40, 26);
+
+    // Right main header bar
+    ctx.fillStyle = topCol;
+    ctx.fillRect(x + 60, 22, w - 64, 54);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(u.title, x + 60 + (w - 64) * 0.5, 56);
+
+    // Sub-banner with recessed black LED fare status box on right
+    ctx.fillStyle = subCol;
+    ctx.fillRect(x + 60, 78, w - 64, 50);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.font = '700 12px sans-serif';
+    ctx.fillText(u.sub.split(' / ')[0], x + 68, 98);
+    ctx.fillText(u.sub.split(' / ')[1] || 'Tickets', x + 68, 116);
+    ctx.fillStyle = '#0e1114';
+    ctx.fillRect(x + w - 58, 86, 44, 34);
+
+    // Recessed touchscreen LCD area + left side physical push-buttons
+    ctx.fillStyle = '#b4babf';
+    ctx.fillRect(x + 12, 138, w - 24, 152);
+    // 4 tactile buttons on left of screen
+    for (let b = 0; b < 4; b++) {
+      ctx.fillStyle = '#eaedf0';
+      ctx.fillRect(x + 18, 156 + b * 28, 22, 20);
+      ctx.strokeStyle = '#70767c';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x + 18, 156 + b * 28, 22, 20);
+    }
+    // White touchscreen monitor with authentic JR East UI
+    ctx.fillStyle = '#1e242a';
+    ctx.fillRect(x + 48, 146, 166, 136);
+    ctx.fillStyle = '#f2f5f2';
+    ctx.fillRect(x + 54, 152, 154, 124);
+    if (u.kind === 'multi') {
+      // Multi-function machine green & magenta menu tiles (from right side of user screenshot!)
+      ctx.fillStyle = '#249848';
+      ctx.fillRect(x + 62, 174, 66, 36);
+      ctx.fillStyle = '#c83474';
+      ctx.fillRect(x + 62, 218, 66, 36);
+      ctx.fillStyle = '#2c3036';
+      ctx.fillRect(x + 134, 174, 66, 36);
+      ctx.fillStyle = '#22262c';
+      ctx.fillRect(x + 134, 218, 66, 36);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('きっぷ', x + 95, 196);
+      ctx.fillText('定期券', x + 95, 240);
+      ctx.fillText('Suica', x + 167, 196);
+      ctx.fillText('チャージ', x + 167, 240);
+    } else {
+      // Standard JR green framed white touchscreen UI (from left side of user screenshot!)
+      ctx.strokeStyle = '#38a446';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x + 62, 164, 138, 86);
+      ctx.fillStyle = '#24943c';
+      ctx.fillRect(x + 64, 166, 134, 18);
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText('Suica・きっぷ選択', x + 131, 179);
+      // Mini green Suica card + IC icon inside screen
+      drawICBadge(ctx, x + 76, 198, 34, 24);
+      ctx.fillStyle = '#7ec83c';
+      ctx.fillRect(x + 122, 198, 42, 26);
+      ctx.fillStyle = '#183018';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillText('Suica', x + 143, 214);
+      ctx.fillStyle = '#207834';
+      ctx.fillRect(x + 76, 232, 110, 12);
+    }
+
+    // Lower deck: IC card tray, bill/coin slots, keypad, recessed dark ticket/change pocket
+    ctx.fillStyle = '#a4acb2';
+    ctx.fillRect(x + 12, 300, w - 24, 178);
+    // IC card holder tray (left)
+    ctx.fillStyle = '#22272c';
+    ctx.fillRect(x + 22, 314, 62, 32);
+    ctx.fillStyle = '#28a89a';
+    ctx.fillRect(x + 26, 318, 54, 6);
+    // Coin cup & bill slot (center)
+    ctx.fillStyle = '#1a1f24';
+    ctx.fillRect(x + 94, 314, 54, 28);
+    ctx.fillStyle = '#262b30';
+    ctx.fillRect(x + 94, 350, 54, 14);
+    // 10-key keypad (right)
+    ctx.fillStyle = '#d4d8dc';
+    ctx.fillRect(x + 158, 314, 52, 54);
+    ctx.fillStyle = '#5a6066';
+    for (let kr = 0; kr < 4; kr++) {
+      for (let kc = 0; kc < 3; kc++) {
+        ctx.fillRect(x + 163 + kc * 15, 319 + kr * 12, 10, 8);
+      }
+    }
+    // Deep recessed dark-steel ticket & change dispenser trays
+    ctx.fillStyle = '#181c20';
+    ctx.fillRect(x + 22, 382, 126, 76);
+    ctx.fillStyle = '#2e343a';
+    ctx.fillRect(x + 28, 390, 114, 28);
+    ctx.fillRect(x + 28, 424, 114, 26);
+    ctx.fillStyle = '#181c20';
+    ctx.fillRect(x + 158, 382, 52, 76);
+  });
+
+  return toTex(c, 1, 1, true);
+}
+
+// Ultra-Precise Top Fascia Texture for Interactable 3D JR East 『自動券売機 きっぷ・チャージ』 (exact match to Screenshot_20261120-100223.png!)
+function buildChargeMachineHeader(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 256);
+  // Crisp white separator frame
+  ctx.fillStyle = '#e8ecea';
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Left vertical JR green column (JR logo + official 交通系IC badge)
+  ctx.fillStyle = '#6ec244';
+  ctx.fillRect(6, 6, 122, 244);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'italic 900 44px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('JR', 67, 66);
+  drawICBadge(ctx, 20, 92, 94, 62);
+  ctx.fillStyle = '#123e1c';
+  ctx.font = '700 16px sans-serif';
+  ctx.fillText('Suica対応', 67, 198);
+
+  // Upper-right bright JR lime-green header: 『きっぷ・チャージ』
+  ctx.fillStyle = '#1a9a3a';
+  ctx.fillRect(134, 6, 372, 122);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 42px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('きっぷ・チャージ', 320, 82);
+
+  // Lower-right lighter lime-green sub-header: 『Tickets / Charge』 + black rectangular LED display window!
+  ctx.fillStyle = '#6ec244';
+  ctx.fillRect(134, 134, 372, 116);
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.font = '700 32px sans-serif';
+  ctx.fillText('Tickets', 160, 182);
+  ctx.fillText('Charge', 160, 224);
+
+  // Black recessed numeric/status LED box on right (iconic detail in Screenshot_20261120-100223.png!)
+  ctx.fillStyle = '#0c0f12';
+  ctx.fillRect(384, 150, 102, 82);
+  ctx.strokeStyle = '#384048';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(384, 150, 102, 82);
+  ctx.fillStyle = '#48e88c';
+  ctx.font = '700 22px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('¥200', 435, 198);
+
+  return toTex(c, 1, 1, true);
+}
+
+// Ultra-Precise Brushed Stainless Lower Console Deck for 3D JR East 『自動券売機 きっぷ・チャージ』
+function buildChargeMachineLowerDeck(): THREE.CanvasTexture {
   const [c, ctx] = makeCanvas(512, 512);
-  ctx.fillStyle = '#d4d8d6';
+  const bg = ctx.createLinearGradient(0, 0, 512, 0);
+  bg.addColorStop(0, '#c6ccd0');
+  bg.addColorStop(0.5, '#dfe3e6');
+  bg.addColorStop(1, '#bcc2c6');
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, 512, 512);
 
-  // 4 machines in the recess: 2 JR green touchscreen machines, 1 yellow, 1 purple/blue指定席券売機
-  const unitColors = ['#2e8b46', '#2e8b46', '#d8b418', '#2262a8'];
-  const labels = ['きっぷ・Suica', 'ICチャージ', '精算・チャージ', '指定席券売機'];
-  for (let i = 0; i < 4; i++) {
-    const x = 12 + i * 124;
-    ctx.fillStyle = '#a8aeb4';
-    ctx.fillRect(x, 34, 114, 300);
-    ctx.fillStyle = unitColors[i];
-    ctx.fillRect(x + 6, 42, 102, 42);
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(labels[i], x + 57, 68);
+  // Brushed metallic panel joints
+  ctx.strokeStyle = '#70767c';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(8, 8, 496, 496);
+  ctx.beginPath();
+  ctx.moveTo(8, 226); ctx.lineTo(504, 226);
+  ctx.stroke();
 
-    // Glowing LCD screen
-    ctx.fillStyle = '#142028';
-    ctx.fillRect(x + 12, 96, 90, 96);
-    ctx.fillStyle = '#92eaf8';
-    ctx.fillRect(x + 18, 102, 78, 74);
-    ctx.fillStyle = '#102430';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('Suica / きっぷ', x + 57, 138);
+  // Top-left: Bill Acceptor (紙幣 1000円〜1万円)
+  ctx.fillStyle = '#181c20';
+  ctx.fillRect(28, 36, 134, 72);
+  ctx.fillStyle = '#24b456';
+  ctx.fillRect(46, 56, 98, 10);
+  ctx.fillStyle = '#2c3238';
+  ctx.font = '700 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('紙幣 / BILLS', 95, 132);
 
-    // Stainless steel coin/card deck
-    ctx.fillStyle = '#30363c';
-    ctx.fillRect(x + 12, 204, 90, 98);
+  // Top-center: Coin Slot & Tray (硬貨)
+  ctx.fillStyle = '#181c20';
+  ctx.fillRect(184, 36, 136, 86);
+  ctx.fillStyle = '#384048';
+  ctx.fillRect(204, 52, 96, 44);
+  ctx.fillStyle = '#2c3238';
+  ctx.fillText('硬貨 / COINS', 252, 146);
+
+  // Top-right: Numeric 10-Key Keypad
+  ctx.fillStyle = '#edf0f2';
+  ctx.fillRect(344, 30, 140, 168);
+  ctx.strokeStyle = '#6c7278';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(344, 30, 140, 168);
+  for (let r = 0; r < 4; r++) {
+    for (let col = 0; col < 3; col++) {
+      ctx.fillStyle = r === 3 && col === 0 ? '#d44238' : r === 3 && col === 2 ? '#228c44' : '#6e757c';
+      ctx.fillRect(358 + col * 40, 44 + r * 36, 30, 26);
+    }
   }
 
-  // Stainless steel lower counter wall
-  const g = ctx.createLinearGradient(0, 334, 0, 512);
-  g.addColorStop(0, '#bcc2c8');
-  g.addColorStop(0.15, '#7c8288');
-  g.addColorStop(1, '#585e64');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 334, 512, 178);
+  // Bottom-left & center: Deep recessed dark steel Ticket / Receipt / Change Dispenser Bins
+  ctx.fillStyle = '#161a1f';
+  ctx.fillRect(28, 250, 294, 224);
+  ctx.strokeStyle = '#5a6066';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(28, 250, 294, 224);
+  // Horizontal slot divider
+  ctx.fillStyle = '#2a3036';
+  ctx.fillRect(44, 272, 262, 62);
+  ctx.fillRect(44, 356, 262, 94);
+  ctx.fillStyle = '#aeb6bc';
+  ctx.font = '700 15px sans-serif';
+  ctx.fillText('きっぷ・領収書 / TICKETS', 175, 308);
+  ctx.fillText('おつり / CHANGE', 175, 408);
+
+  // Bottom-right: Maintenance access panel + black kickplate
+  ctx.fillStyle = '#9aa0a6';
+  ctx.fillRect(344, 250, 140, 224);
+  ctx.strokeStyle = '#5a6066';
+  ctx.strokeRect(344, 250, 140, 224);
+  ctx.fillStyle = '#181c20';
+  ctx.fillRect(0, 482, 512, 30);
+
+  return toTex(c, 1, 1, true);
+}
+
+// Authentic JR East Automatic Ticket Gate Front LED Direction Arrow (↓ Emerald Open / Magnetic Ticket Slit)
+function buildTurnstileFrontArrow(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(128, 256);
+  ctx.fillStyle = '#161a20';
+  ctx.fillRect(0, 0, 128, 256);
+  ctx.strokeStyle = '#3c444c';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(3, 3, 122, 250);
+
+  // Upper illuminated green downward entry arrow lens
+  ctx.fillStyle = '#0e281a';
+  ctx.fillRect(18, 20, 92, 92);
+  ctx.fillStyle = '#38e882';
+  ctx.beginPath();
+  ctx.moveTo(64, 98);
+  ctx.lineTo(28, 56);
+  ctx.lineTo(48, 56);
+  ctx.lineTo(48, 30);
+  ctx.lineTo(80, 30);
+  ctx.lineTo(80, 56);
+  ctx.lineTo(100, 56);
+  ctx.closePath();
+  ctx.fill();
+
+  // Middle magnetic paper ticket insertion slot
+  ctx.fillStyle = '#06080a';
+  ctx.fillRect(24, 144, 80, 14);
+  ctx.fillStyle = '#54d88c';
+  ctx.fillRect(24, 138, 80, 4);
+
+  // Lower IC mark badge
+  drawICBadge(ctx, 26, 184, 76, 46);
+  return toTex(c, 1, 1, true);
+}
+
+// Midnight Shinjuku Station Closed-Corridor / Last-Train Folding Barricade Panel
+function buildBarricadePanel(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(512, 256);
+  ctx.fillStyle = '#e6e4dc';
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Top & bottom red/white reflective hazard chevron bars
+  for (let x = -64; x < 576; x += 48) {
+    ctx.fillStyle = '#c82026';
+    ctx.beginPath();
+    ctx.moveTo(x, 0); ctx.lineTo(x + 24, 0); ctx.lineTo(x + 8, 38); ctx.lineTo(x - 16, 38);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x, 218); ctx.lineTo(x + 24, 218); ctx.lineTo(x + 8, 256); ctx.lineTo(x - 16, 256);
+    ctx.closePath(); ctx.fill();
+  }
+
+  ctx.fillStyle = '#181a1d';
+  ctx.textAlign = 'center';
+  ctx.font = '900 46px sans-serif';
+  ctx.fillText('終電終了・立入禁止', 256, 118);
+  ctx.fillStyle = '#b81e24';
+  ctx.font = '800 28px monospace';
+  ctx.fillText('CLOSED AFTER LAST TRAIN — 00:47', 256, 166);
+  ctx.fillStyle = '#484e54';
+  ctx.font = '700 20px sans-serif';
+  ctx.fillText('JR東日本 新宿駅', 256, 202);
+  return toTex(c, 1, 1, true);
+}
+
+// Wall-Mounted Japanese Station Fire Alarm Call Box (火災報知機)
+function buildFireAlarmBox(): THREE.CanvasTexture {
+  const [c, ctx] = makeCanvas(128, 256);
+  ctx.fillStyle = '#a81c20';
+  ctx.fillRect(0, 0, 128, 256);
+  ctx.strokeStyle = '#520c0e';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(3, 3, 122, 250);
+  // Red pilot lamp & white circular push button
+  ctx.fillStyle = '#ff3838';
+  ctx.beginPath(); ctx.arc(64, 52, 18, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f2efe8';
+  ctx.beginPath(); ctx.arc(64, 136, 34, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#d42228';
+  ctx.beginPath(); ctx.arc(64, 136, 18, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText('強く押す', 64, 212);
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText('FIRE ALARM', 64, 238);
   return toTex(c, 1, 1, true);
 }
 
@@ -2003,7 +2365,7 @@ export function createTerminalScreen(zone: string): {
   texture: THREE.CanvasTexture;
   ctx: CanvasRenderingContext2D;
 } {
-  const [c, ctx] = makeCanvas(256, 256);
+  const [c, ctx] = makeCanvas(512, 384);
   drawTerminalScreen(ctx, zone, false, 0);
   return { texture: toTex(c, 1, 1, true), ctx };
 }
@@ -2014,45 +2376,108 @@ export function drawTerminalScreen(
   charged: boolean,
   progress: number
 ): void {
-  ctx.fillStyle = charged ? '#0c2618' : '#081b22';
-  ctx.fillRect(0, 0, 256, 256);
-  ctx.strokeStyle = charged ? '#38d882' : '#42d4ca';
+  // Authentic JR East Automatic Ticket/Charge Machine White & Lime-Green Touchscreen UI (Screenshot_20261120-100223.png!)
+  ctx.fillStyle = charged ? '#eaf7ee' : '#eef3f0';
+  ctx.fillRect(0, 0, 512, 384);
+
+  // Top JR East green status header bar
+  ctx.fillStyle = charged ? '#167c3c' : '#1b8e3e';
+  ctx.fillRect(0, 0, 512, 56);
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.font = '800 24px sans-serif';
+  ctx.fillText('Suica チャージ  /  IC Charge', 18, 37);
+  ctx.textAlign = 'right';
+  ctx.font = '600 15px monospace';
+  ctx.fillStyle = '#d6f4dc';
+  ctx.fillText('00:47  JR新宿', 494, 35);
+
+  // Left vertical mode tab column (matching user screenshot!)
+  const tabs = ['きっぷ', 'チャージ', '履歴印字', 'English'];
+  tabs.forEach((label, i) => {
+    const ty = 70 + i * 72;
+    ctx.fillStyle = i === 1 ? '#209440' : '#d2dad6';
+    ctx.fillRect(14, ty, 108, 60);
+    ctx.strokeStyle = i === 1 ? '#12642a' : '#96a09a';
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(14, ty, 108, 60);
+    ctx.fillStyle = i === 1 ? '#ffffff' : '#26302a';
+    ctx.textAlign = 'center';
+    ctx.font = '700 17px sans-serif';
+    ctx.fillText(label, 68, ty + 37);
+  });
+
+  // Main right green-bordered content card (exact visual signature of Screenshot_20261120-100223.png!)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(138, 70, 358, 294);
+  ctx.strokeStyle = charged ? '#1a8e42' : '#40a848';
   ctx.lineWidth = 6;
-  ctx.strokeRect(8, 8, 240, 240);
-  ctx.fillStyle = charged ? '#5ef0a0' : '#7af0e8';
+  ctx.strokeRect(138, 70, 358, 294);
+
+  ctx.fillStyle = '#526058';
   ctx.textAlign = 'center';
-  ctx.font = '700 22px sans-serif';
-  ctx.fillText('Suica チャージ機', 128, 48);
-  ctx.fillStyle = '#c8d6d8';
-  ctx.font = '500 12.5px sans-serif';
-  ctx.fillText(zone, 128, 76);
+  ctx.font = '600 15px sans-serif';
+  ctx.fillText(zone, 317, 102);
+
   if (charged) {
-    ctx.fillStyle = '#4be594';
-    ctx.font = '700 32px sans-serif';
-    ctx.fillText('チャージ完了', 128, 146);
-    ctx.font = '600 20px monospace';
-    ctx.fillText('+¥200  OK', 128, 186);
+    ctx.fillStyle = '#157e3a';
+    ctx.font = '900 40px sans-serif';
+    ctx.fillText('チャージ完了', 317, 196);
+    ctx.fillStyle = '#1e3026';
+    ctx.font = '700 24px monospace';
+    ctx.fillText('+¥200  COMPLETED', 317, 246);
+    ctx.fillStyle = '#1d8a42';
+    ctx.fillRect(184, 286, 266, 44);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 18px sans-serif';
+    ctx.fillText('カードをお取りください', 317, 315);
   } else if (progress > 0) {
-    ctx.fillStyle = '#f2cc52';
-    ctx.font = '700 24px sans-serif';
-    ctx.fillText('認証中…', 128, 126);
-    ctx.fillStyle = '#15343d';
-    ctx.fillRect(32, 148, 192, 26);
-    ctx.fillStyle = '#4be3d6';
-    ctx.fillRect(34, 150, Math.round(188 * Math.min(1, progress)), 22);
-    ctx.fillStyle = '#d9ecf0';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText(`${Math.round(progress * 100)}%`, 128, 202);
+    ctx.fillStyle = '#b8760a';
+    ctx.font = '800 32px sans-serif';
+    ctx.fillText('ICカード書込中…', 317, 174);
+    ctx.fillStyle = '#dce4e0';
+    ctx.fillRect(168, 206, 298, 34);
+    ctx.fillStyle = '#22a64c';
+    ctx.fillRect(172, 210, Math.round(290 * Math.min(1, progress)), 26);
+    ctx.fillStyle = '#1c2822';
+    ctx.font = '800 24px monospace';
+    ctx.fillText(`${Math.round(progress * 100)}%`, 317, 284);
+    ctx.fillStyle = '#c43228';
+    ctx.font = '700 15px sans-serif';
+    ctx.fillText('カードを抜かないでください', 317, 326);
   } else {
-    ctx.fillStyle = '#e6f7f5';
-    ctx.font = '700 25px sans-serif';
-    ctx.fillText('ICカードをタッチ', 128, 138);
-    ctx.fillStyle = '#57d4cb';
-    ctx.font = '700 22px monospace';
-    ctx.fillText('¥200 CHARGE', 128, 178);
-    ctx.fillStyle = '#8ab3b8';
-    ctx.font = '500 14px sans-serif';
-    ctx.fillText('長押しでチャージ', 128, 218);
+    // Official red/gold IC mark + green Suica card illustration inside main box!
+    drawICBadge(ctx, 186, 126, 76, 52);
+    // Mini Suica card
+    ctx.fillStyle = '#84cc3c';
+    ctx.fillRect(284, 124, 96, 58);
+    ctx.fillStyle = '#e8ece6';
+    ctx.fillRect(284, 162, 96, 20);
+    ctx.fillStyle = '#163618';
+    ctx.textAlign = 'left';
+    ctx.font = '800 20px sans-serif';
+    ctx.fillText('Suica', 294, 152);
+    // Mini blue Pasmo/IC card accent
+    ctx.fillStyle = '#2486c8';
+    ctx.fillRect(392, 128, 62, 50);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 13px sans-serif';
+    ctx.fillText('IC', 416, 158);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#14201a';
+    ctx.font = '800 26px sans-serif';
+    ctx.fillText('Suicaをホルダーへ入れてください', 317, 232);
+
+    ctx.fillStyle = '#1d923c';
+    ctx.fillRect(176, 260, 282, 54);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 24px sans-serif';
+    ctx.fillText('¥200 チャージ（長押し）', 317, 296);
+
+    ctx.fillStyle = '#56645c';
+    ctx.font = '600 14px sans-serif';
+    ctx.fillText('HOLD [E] / 操作長押しでICチャージ', 317, 344);
   }
 }
 
@@ -2207,32 +2632,31 @@ function buildSoftLightShaft(): THREE.CanvasTexture {
   return tex;
 }
 
-// Rich PMREM reflection environment mimicking Shinjuku Station's white spandrel ceiling,
-// circular LED downlights, cyan/magenta Shinjuku Wall 456, and J・ADビジョン light-box columns!
+// Moody 00:47 Midnight Shinjuku Station PMREM reflection cube (eliminates harsh ceiling whiteout reflections!)
 export function createShinjukuEnvMap(renderer: THREE.WebGLRenderer): THREE.Texture {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const envScene = new THREE.Scene();
-  envScene.background = new THREE.Color(0x161d24);
+  envScene.background = new THREE.Color(0x0b1016);
 
   const shell = new THREE.Mesh(
     new THREE.BoxGeometry(28, 10, 24),
-    new THREE.MeshBasicMaterial({ color: 0x222a32, side: THREE.BackSide })
+    new THREE.MeshBasicMaterial({ color: 0x131920, side: THREE.BackSide })
   );
   envScene.add(shell);
 
-  // Off-white ceiling bounce + recessed LED downlight discs
+  // Subdued midnight ceiling bounce + soft recessed LED pinpoints
   const ceilBounce = new THREE.Mesh(
     new THREE.PlaneGeometry(24, 20),
-    new THREE.MeshBasicMaterial({ color: 0x727a82, side: THREE.DoubleSide })
+    new THREE.MeshBasicMaterial({ color: 0x2c3238, side: THREE.DoubleSide })
   );
   ceilBounce.position.set(0, 4.85, 0);
   ceilBounce.rotation.x = Math.PI / 2;
   envScene.add(ceilBounce);
 
-  const discGeo = new THREE.CircleGeometry(0.42, 12);
-  const discMat = new THREE.MeshBasicMaterial({ color: 0xfffaf0, side: THREE.DoubleSide });
-  for (const x of [-8, -4, 0, 4, 8]) {
-    for (const z of [-6, -2, 2, 6]) {
+  const discGeo = new THREE.CircleGeometry(0.28, 10);
+  const discMat = new THREE.MeshBasicMaterial({ color: 0x9aaab4, side: THREE.DoubleSide });
+  for (const x of [-8, 0, 8]) {
+    for (const z of [-4, 4]) {
       const d = new THREE.Mesh(discGeo, discMat);
       d.position.set(x, 4.78, z);
       d.rotation.x = Math.PI / 2;
@@ -2240,13 +2664,13 @@ export function createShinjukuEnvMap(renderer: THREE.WebGLRenderer): THREE.Textu
     }
   }
 
-  // Shinjuku Wall 456 cyan/pink glow on North + J・ADビジョン royal-blue/cyan columns on South + JR green gates
+  // Soft muted midnight glow bands from Wall 456, J・ADビジョン, and JR gates
   const bands: Array<[number, number, number, number, number, number, number]> = [
-    [0, 1.8, -11.5, 18.0, 2.4, 0x3ec8f0, 0], // Shinjuku Wall 456 cyan-blue reflection
-    [0, 3.6, -11.2, 20.0, 0.4, 0x4898ff, 0], // Ceiling Line LED reflection
-    [0, 1.8, 11.5, 14.0, 2.6, 0x3278e8, Math.PI], // J・ADビジョン light-box blue bounce
-    [13.5, 1.8, 0, 6.0, 2.0, 0x249e54, -Math.PI / 2], // East Gate JR green reflection
-    [-13.5, 1.8, 0, 6.0, 2.0, 0x249e54, Math.PI / 2], // West Gate JR green reflection
+    [0, 1.8, -11.5, 18.0, 2.2, 0x1a5878, 0],
+    [0, 3.6, -11.2, 20.0, 0.35, 0x245494, 0],
+    [0, 1.8, 11.5, 14.0, 2.4, 0x1a3e78, Math.PI],
+    [13.5, 1.8, 0, 6.0, 1.8, 0x165e34, -Math.PI / 2],
+    [-13.5, 1.8, 0, 6.0, 1.8, 0x165e34, Math.PI / 2],
   ];
   for (const [x, y, z, w, h, col, ry] of bands) {
     const p = new THREE.Mesh(
@@ -2258,7 +2682,7 @@ export function createShinjukuEnvMap(renderer: THREE.WebGLRenderer): THREE.Textu
     envScene.add(p);
   }
 
-  const target = pmrem.fromScene(envScene, 0.03);
+  const target = pmrem.fromScene(envScene, 0.045);
   pmrem.dispose();
   return target.texture;
 }

@@ -178,34 +178,34 @@ export class RabbitAI {
         }
 
         if (m.name === 'FacePanel') {
-          // Soiled damp off-white felt kigurumi face mask
+          // Damp, soiled off-white felt kigurumi face mask under midnight lighting
           m.material = new THREE.MeshPhysicalMaterial({
             map: textures.faceGrime,
-            color: 0xd8d3c8,
+            color: 0xc2bcb0,
             normalMap: textures.suitNormal,
-            normalScale: new THREE.Vector2(0.85, 0.85),
-            roughness: 0.88,
+            normalScale: new THREE.Vector2(1.05, 1.05),
+            roughness: 0.92,
             metalness: 0.02,
-            sheen: 0.48,
-            sheenRoughness: 0.78,
-            sheenColor: new THREE.Color(0xdad4c8),
-            envMapIntensity: 0.85,
+            sheen: 0.42,
+            sheenRoughness: 0.82,
+            sheenColor: new THREE.Color(0xc4beb2),
+            envMapIntensity: 0.52,
           });
           return;
         }
 
-        // Photorealistic matted soiled purple plush kigurumi fabric!
+        // Photorealistic matted soiled abandoned purple plush kigurumi fabric!
         m.material = new THREE.MeshPhysicalMaterial({
           map: textures.suitGrime,
-          color: 0x9b6ed0,
+          color: 0x764aa8,
           normalMap: textures.suitNormal,
-          normalScale: new THREE.Vector2(1.35, 1.35),
-          roughness: 0.86,
+          normalScale: new THREE.Vector2(1.65, 1.65),
+          roughness: 0.91,
           metalness: 0.02,
-          sheen: 0.78,
-          sheenRoughness: 0.72,
-          sheenColor: new THREE.Color(0xaa80e0),
-          envMapIntensity: 1.05,
+          sheen: 0.68,
+          sheenRoughness: 0.78,
+          sheenColor: new THREE.Color(0x8862be),
+          envMapIntensity: 0.62,
         });
       }
     });
@@ -482,10 +482,10 @@ export class RabbitAI {
 
       case 'PATROL': {
         if (vis.canSee) {
-          if (this.stareCooldown <= 0 && dist > 6.5 && dist < 20) {
+          if (this.stareCooldown <= 0 && dist > 6.0 && dist < 21) {
             this.state = 'STARE_FREEZE';
             this.stateTimer = 0;
-            this.stareCooldown = nm ? 14 : 18;
+            this.stareCooldown = nm ? 11 : 14;
             out.justStareFroze = true;
             this.playClip('Sit', 0.15, 0.06);
           } else {
@@ -494,20 +494,20 @@ export class RabbitAI {
           break;
         }
 
-        // Check if near a Shinjuku Alps Square Signage Pillar to perform a terrifying CORNER PEEK!
+        // Check if near a Shinjuku J・ADビジョン / Platform Pillar to perform a terrifying CORNER PEEK!
         if (
           this.peekCooldown <= 0 &&
           !player.hiddenCloset &&
-          dist > 9 &&
-          dist < 23 &&
+          dist > 8.5 &&
+          dist < 24 &&
           collision.hasLineOfSight(rx, rz, player.x, player.z)
         ) {
           for (const pil of PEEK_PILLARS) {
-            if (Math.hypot(rx - pil.x, rz - pil.z) < 2.9) {
+            if (Math.hypot(rx - pil.x, rz - pil.z) < 3.1) {
               this.state = 'PEEK_CORNER';
               this.stateTimer = 0;
               this.peekSpottedFlash = false;
-              this.peekCooldown = nm ? 16 : 22;
+              this.peekCooldown = nm ? 12 : 16;
               this.peekLeanSide = Math.random() < 0.5 ? 1 : -1;
               this.playClip('Sit', 0.25, 0.08);
               out.justPeeked = true;
@@ -759,20 +759,21 @@ export class RabbitAI {
     if (this.state === 'PEEK_CORNER' && vis.playerAimingAtRabbit) fear = Math.max(fear, 0.72);
     out.fearLevel = Math.min(1, fear);
 
-    // Tapetum-lucidum eye glint intensity
+    // Tapetum-lucidum nocturnal eye glint — catches eerie light down dark Shinjuku corridors!
     const wantGlow =
       this.state === 'CHASE' ||
       this.state === 'LEAP_LUNGE' ||
       this.state === 'STARE_FREEZE' ||
       this.state === 'CLOSET_INSPECT' ||
       this.state === 'PEEK_CORNER' ||
+      dist < 22 ||
       (vis.playerAimingAtRabbit && player.flashlightOn);
     this.eyeGlintMat.color.setHex(
       this.state === 'CHASE' || this.state === 'STARE_FREEZE' || this.state === 'CLOSET_INSPECT'
-        ? 0xff1e28
-        : 0xffd2d6
+        ? 0xff1a24
+        : 0xffe0e4
     );
-    this.eyeGlintMat.opacity += ((wantGlow ? 0.95 : 0.14) - this.eyeGlintMat.opacity) * Math.min(1, dt * 8);
+    this.eyeGlintMat.opacity += ((wantGlow ? 0.96 : 0.28) - this.eyeGlintMat.opacity) * Math.min(1, dt * 8);
 
     return out;
   }
@@ -786,9 +787,9 @@ export class RabbitAI {
   ): void {
     this.twitchTimer -= dt;
     if (this.twitchTimer <= 0) {
-      this.twitchTimer = 0.8 + Math.random() * 2.2;
-      this.earTwitchL = (Math.random() - 0.5) * 0.28;
-      this.earTwitchR = (Math.random() - 0.5) * 0.28;
+      this.twitchTimer = 0.65 + Math.random() * 1.9;
+      this.earTwitchL = (Math.random() - 0.5) * 0.34;
+      this.earTwitchR = (Math.random() - 0.5) * 0.34;
     }
     this.earTwitchL *= Math.max(0, 1 - dt * 5);
     this.earTwitchR *= Math.max(0, 1 - dt * 5);
@@ -799,32 +800,34 @@ export class RabbitAI {
     // Spine corner-lean during PEEK_CORNER or creepy hunched crouch during CLOSET_INSPECT
     if (this.spineBone) {
       if (this.state === 'PEEK_CORNER') {
-        const lean = Math.min(1, this.stateTimer * 2.4) * 0.44 * this.peekLeanSide;
+        const lean = Math.min(1, this.stateTimer * 2.4) * 0.46 * this.peekLeanSide;
         this.spineBone.rotation.z += lean;
-        this.spineBone.rotation.x += 0.12;
+        this.spineBone.rotation.x += 0.14;
       } else if (this.state === 'CLOSET_INSPECT') {
-        this.spineBone.rotation.x += 0.28 + Math.sin(elapsed * 3.2) * 0.05;
+        this.spineBone.rotation.x += 0.3 + Math.sin(elapsed * 3.4) * 0.06;
       } else if (this.state === 'CHASE') {
-        this.spineBone.rotation.x += 0.22;
+        this.spineBone.rotation.x += 0.24;
       }
     }
 
-    // Uncanny Head tracking + bone-crack 38° tilt during STARE_FREEZE!
+    // Uncanny Head tracking + bone-crack 38° tilt + pre-sprint tremor during STARE_FREEZE!
     if (this.headBone) {
       let relYaw = angleToPlayer - this.root.rotation.y;
       while (relYaw > Math.PI) relYaw -= Math.PI * 2;
       while (relYaw < -Math.PI) relYaw += Math.PI * 2;
       const targetYaw = dist < 24 ? Math.max(-0.85, Math.min(0.85, relYaw)) : 0;
+      const stareJitter =
+        this.state === 'STARE_FREEZE' && Math.sin(elapsed * 43) > 0.78 ? (Math.random() - 0.5) * 0.14 : 0;
       const targetTilt =
         this.state === 'STARE_FREEZE'
-          ? 0.58 * Math.sign(Math.sin(elapsed * 0.7) || 1)
+          ? 0.62 * Math.sign(Math.sin(elapsed * 0.7) || 1) + stareJitter
           : this.state === 'PEEK_CORNER'
-            ? 0.36 * this.peekLeanSide
+            ? 0.38 * this.peekLeanSide
             : this.state === 'CLOSET_INSPECT'
-              ? Math.sin(elapsed * 2.3) * 0.32
+              ? Math.sin(elapsed * 2.5) * 0.34
               : aimedAt
-                ? 0.22
-                : Math.sin(elapsed * 0.9) * 0.07;
+                ? 0.24
+                : Math.sin(elapsed * 0.9) * 0.08;
 
       this.headTrackYaw += (targetYaw - this.headTrackYaw) * Math.min(1, dt * 6);
       this.headTiltZ += (targetTilt - this.headTiltZ) * Math.min(1, dt * 7);

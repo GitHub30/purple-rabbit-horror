@@ -396,18 +396,37 @@ body.is-hiding .interact-prompt { top: auto; bottom: 152px; }
 .look-hint { font-size: 11px; color: rgba(155, 163, 170, 0.72); }
 
 .station-map-panel {
-  position: absolute; right: 22px; bottom: 20px; width: 348px;
-  padding: 10px 11px; background: rgba(11, 15, 19, 0.94);
-  border: 1px solid rgba(128, 195, 66, 0.42); backdrop-filter: blur(6px);
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 36; pointer-events: auto;
+  width: min(520px, calc(100vw - 28px));
+  max-height: calc(100vh - 24px);
+  padding: 12px 14px 11px;
+  background: rgba(9, 13, 17, 0.95);
+  border: 1px solid rgba(128, 195, 66, 0.55);
+  border-top: 3px solid var(--accent-jr);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.88), 0 0 0 100vmax rgba(4, 7, 10, 0.44);
+  backdrop-filter: blur(8px);
 }
-.station-map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; }
-.station-map-key { font-family: var(--font-mono); font-size: 10px; font-weight: 400; color: var(--text-muted); }
-#station-map-canvas { display: block; width: 100%; height: auto; border: 1px solid rgba(236, 234, 228, 0.14); }
-.station-map-legend { display: flex; justify-content: space-between; margin-top: 7px; font-size: 10.5px; color: var(--text-muted); }
+.station-map-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; }
+.station-map-title-group { display: inline-flex; align-items: center; gap: 8px; }
+.station-map-jr-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 6px; background: #146837; color: #ffffff;
+  font-family: var(--font-sans); font-style: italic; font-weight: 900; font-size: 11px; letter-spacing: 0.02em;
+}
+.station-map-close {
+  padding: 4px 10px; background: rgba(236, 234, 228, 0.1);
+  border: 1px solid rgba(236, 234, 228, 0.28); color: var(--text-main);
+  font-family: var(--font-sans); font-size: 11.5px; font-weight: 700; cursor: pointer;
+}
+.station-map-close:hover, .station-map-close:active { background: rgba(236, 234, 228, 0.22); }
+#station-map-canvas { display: block; width: 100%; max-height: calc(100vh - 118px); object-fit: contain; height: auto; border: 1px solid rgba(236, 234, 228, 0.18); background: #0a0f14; }
+.station-map-legend { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-top: 8px; font-size: 11px; color: var(--text-muted); }
 .station-map-legend span { display: inline-flex; align-items: center; gap: 5px; }
-.leg-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .leg-term { background: var(--accent-cyan); }
 .leg-done { background: var(--accent-emerald); }
+.leg-hide { background: #48b878; border-radius: 2px; }
 .leg-you { background: var(--accent-amber); }
 
 /* Modals */
@@ -482,14 +501,13 @@ body.is-touch-ui .hud-bottom-left { bottom: calc(max(22px, env(safe-area-inset-b
 body.is-touch-ui .subtitle-bar { bottom: calc(max(22px, env(safe-area-inset-bottom)) + 180px); font-size: 13px; padding: 8px 14px; }
 body.is-touch-ui .interact-prompt { top: calc(50% + 56px); }
 body.is-touch-ui .interact-prompt kbd { display: none; }
-body.is-touch-ui .station-map-panel { right: max(12px, env(safe-area-inset-right)); bottom: auto; top: calc(max(12px, env(safe-area-inset-top)) + 128px); width: min(240px, calc(100vw - 24px)); }
 
 @media (max-width: 768px) {
   body.is-touch-ui .subtitle-bar { top: calc(max(10px, env(safe-area-inset-top)) + 122px); bottom: auto; max-width: calc(100vw - 24px); width: calc(100vw - 24px); font-size: 12.5px; padding: 8px 12px; }
   .screen-title { align-items: flex-end; padding: 16px max(18px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); overflow-y: auto; }
-  .title-scrim { background: linear-gradient(to top, rgba(6, 9, 12, 0.96), rgba(6, 9, 12, 0.88) 44%, rgba(6, 9, 12, 0.25) 66%, rgba(6, 9, 12, 0.14)); }
+  .title-scrim { background: linear-gradient(to top, rgba(4, 6, 9, 0.97), rgba(5, 8, 11, 0.90) 48%, rgba(5, 8, 11, 0.52) 72%, rgba(5, 8, 11, 0.24)); }
   .title-content { max-width: 100%; }
-  .game-title { font-size: clamp(34px, 10vw, 46px); letter-spacing: 0.18em; margin-bottom: 6px; }
+  .game-title { font-size: clamp(34px, 10vw, 46px); letter-spacing: 0.18em; margin-bottom: 6px; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9); }
   .ic-card { top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); width: 184px; padding: 9px 11px 10px; }
   .ic-balance { font-size: 14px; }
   .cctv-top-right { top: max(10px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); gap: 6px; }
@@ -505,6 +523,10 @@ body.is-touch-ui .station-map-panel { right: max(12px, env(safe-area-inset-right
   .cctv-top-right { top: max(10px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); gap: 6px; }
   .cctv-stamp { font-size: 10.5px; padding: 5px 9px; }
   .panel-modal, .paper-modal { padding: 18px 20px; max-height: 86vh; overflow-y: auto; }
+  .station-map-panel { width: min(410px, calc(100vw - 260px)); padding: 8px 10px; }
+  .station-map-header { margin-bottom: 5px; font-size: 11.5px; }
+  #station-map-canvas { max-height: calc(100vh - 88px); }
+  .station-map-legend { margin-top: 5px; font-size: 9.5px; gap: 4px 8px; }
   .touch-joystick-zone { width: 120px; height: 120px; bottom: max(12px, env(safe-area-inset-bottom)); }
   .touch-joystick-base { width: 100px; height: 100px; }
   .touch-actions { bottom: max(12px, env(safe-area-inset-bottom)); gap: 7px; }

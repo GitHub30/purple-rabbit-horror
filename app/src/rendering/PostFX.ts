@@ -22,7 +22,7 @@ const FULLSCREEN_VERT = /* glsl */ `
   }
 `;
 
-// Pass 1: Extract bright HDR highlights for silky optical bloom
+// Pass 1: Extract only true high-energy specular/LED highlights (prevents white signs & floor glare!)
 const BLOOM_EXTRACT_FRAG = /* glsl */ `
   precision highp float;
   uniform sampler2D tDiffuse;
@@ -30,8 +30,9 @@ const BLOOM_EXTRACT_FRAG = /* glsl */ `
   void main() {
     vec3 col = texture2D(tDiffuse, vUv).rgb;
     float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
-    float soft = smoothstep(0.56, 1.38, luma);
-    gl_FragColor = vec4(col * soft, 1.0);
+    float soft = smoothstep(1.12, 2.35, luma);
+    vec3 extracted = min(col * soft, vec3(1.65));
+    gl_FragColor = vec4(extracted, 1.0);
   }
 `;
 
@@ -51,7 +52,7 @@ const BLOOM_BLUR_FRAG = /* glsl */ `
   }
 `;
 
-// Final Composite: DepthTexture SSAO + Multi-Pass Bloom + Anamorphic Streak + CAS + ACES + Horror Optics
+// Final Composite: Deep Bilateral Depth SSAO + Tight Anti-Glare Optical Bloom + CAS + ACES + Midnight Horror Optics
 const COMPOSITE_FRAG = /* glsl */ `
   precision highp float;
   uniform sampler2D tDiffuse;
@@ -104,76 +105,76 @@ const COMPOSITE_FRAG = /* glsl */ `
     return 0.5 + c * (1.0 + amt * r2);
   }
 
-  // 10-tap Rotated-Kernel Bilateral Depth SSAO
+  // 10-tap Rotated-Kernel Bilateral Depth SSAO (crisp architectural crease & floor contact occlusion!)
   float computeSSAO(vec2 uv, float centerZ, vec2 px) {
-    if (uHasDepth < 0.5 || uUltra < 0.5 || centerZ > 24.0 || centerZ < 0.16) return 1.0;
+    if (uHasDepth < 0.5 || uUltra < 0.5 || centerZ > 26.0 || centerZ < 0.15) return 1.0;
     float ang = interleavedNoise(uv * uResolution) * 6.2831853;
     float sa = sin(ang);
     float ca = cos(ang);
     mat2 rot = mat2(ca, -sa, sa, ca);
 
-    float screenRad = clamp(0.42 / max(centerZ, 0.65), 0.0035, 0.024);
+    float screenRad = clamp(0.48 / max(centerZ, 0.65), 0.004, 0.028);
     float aspect = uResolution.x / max(1.0, uResolution.y);
     vec2 radVec = vec2(screenRad / max(0.65, aspect), screenRad);
 
     vec2 k[10];
-    k[0] = vec2( 0.92,  0.14) * 0.38;
-    k[1] = vec2(-0.85,  0.32) * 0.48;
-    k[2] = vec2( 0.24, -0.91) * 0.56;
-    k[3] = vec2(-0.34, -0.82) * 0.66;
+    k[0] = vec2( 0.92,  0.14) * 0.36;
+    k[1] = vec2(-0.85,  0.32) * 0.46;
+    k[2] = vec2( 0.24, -0.91) * 0.54;
+    k[3] = vec2(-0.34, -0.82) * 0.64;
     k[4] = vec2( 0.68,  0.65) * 0.74;
     k[5] = vec2(-0.62, -0.68) * 0.82;
     k[6] = vec2(-0.18,  0.96) * 0.90;
-    k[7] = vec2( 0.78, -0.58) * 0.96;
-    k[8] = vec2( 0.10,  0.52) * 0.44;
-    k[9] = vec2(-0.50, -0.15) * 0.60;
+    k[7] = vec2( 0.78, -0.58) * 0.98;
+    k[8] = vec2( 0.10,  0.52) * 0.42;
+    k[9] = vec2(-0.50, -0.15) * 0.58;
 
     float occ = 0.0;
-    float bias = 0.032 + centerZ * 0.008;
-    float maxRange = 0.7 + centerZ * 0.04;
+    float bias = 0.024 + centerZ * 0.0065;
+    float maxRange = 0.78 + centerZ * 0.042;
 
     for (int i = 0; i < 10; i++) {
       vec2 suv = clamp(uv + (rot * k[i]) * radVec, px * 2.0, 1.0 - px * 2.0);
       float sampleZ = linearizeDepth(texture2D(tDepth, suv).x);
       float diff = centerZ - sampleZ;
-      float rangeW = 1.0 - smoothstep(maxRange * 0.45, maxRange * 1.4, abs(diff));
-      occ += smoothstep(bias, bias + 0.16, diff) * rangeW;
+      float rangeW = 1.0 - smoothstep(maxRange * 0.42, maxRange * 1.35, abs(diff));
+      occ += smoothstep(bias, bias + 0.14, diff) * rangeW;
     }
 
-    occ = clamp((occ / 10.0) * 1.15, 0.0, 0.68);
-    float distFade = 1.0 - smoothstep(14.0, 24.0, centerZ);
-    return 1.0 - occ * 0.48 * distFade;
+    occ = clamp((occ / 10.0) * 1.32, 0.0, 0.78);
+    float distFade = 1.0 - smoothstep(16.0, 26.0, centerZ);
+    return 1.0 - occ * 0.62 * distFade;
   }
 
-  // Subtle horizontal anamorphic lens flare on blazing Shinjuku fluorescent tubes & headlights
+  // Whisper-subtle horizontal anamorphic glint strictly on intense point emitters
   vec3 sampleAnamorphic(vec2 uv, vec2 px) {
     if (uUltra < 0.5) return vec3(0.0);
     vec3 streak = vec3(0.0);
     float offs[4];
-    offs[0] = -18.0; offs[1] = -8.0; offs[2] = 8.0; offs[3] = 18.0;
+    offs[0] = -14.0; offs[1] = -6.0; offs[2] = 6.0; offs[3] = 14.0;
     for (int i = 0; i < 4; i++) {
-      vec3 s = texture2D(tBloom, clamp(uv + vec2(offs[i] * px.x * 2.0, 0.0), 0.002, 0.998)).rgb;
+      vec3 s = texture2D(tBloom, clamp(uv + vec2(offs[i] * px.x * 1.8, 0.0), 0.002, 0.998)).rgb;
       streak += s;
     }
-    return streak * vec3(0.16, 0.24, 0.28) * 0.32;
+    return streak * vec3(0.14, 0.22, 0.26) * 0.09;
   }
 
   void main() {
     vec2 px = 1.0 / max(vec2(1.0), uResolution);
-    float distAmt = (uUltra > 0.5 ? 0.036 : 0.018) + uFear * 0.026 + uGlitch * 0.052;
+    float distAmt = (uUltra > 0.5 ? 0.028 : 0.015) + uFear * 0.032 + uGlitch * 0.056;
     vec2 uv = barrelDistort(vUv, distAmt);
 
     if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
-      gl_FragColor = vec4(0.012, 0.016, 0.022, 1.0);
+      gl_FragColor = vec4(0.008, 0.011, 0.016, 1.0);
       return;
     }
 
     // VHS / Electromagnetic interference tearing during terror & jumpscares
     if (uGlitch > 0.015) {
-      float band = floor(uv.y * 42.0);
-      float tear = hash12(vec2(band, floor(uTime * 28.0)));
-      if (tear > 1.0 - uGlitch * 0.32) {
-        uv.x = clamp(uv.x + (tear - 0.5) * 0.055 * uGlitch, 0.002, 0.998);
+      float band = floor(uv.y * 46.0);
+      float tear = hash12(vec2(band, floor(uTime * 30.0)));
+      if (tear > 1.0 - uGlitch * 0.34) {
+        uv.x = clamp(uv.x + (tear - 0.5) * 0.062 * uGlitch, 0.002, 0.998);
       }
     }
 
@@ -181,14 +182,14 @@ const COMPOSITE_FRAG = /* glsl */ `
     float rad2 = dot(centered, centered);
 
     // Subtle optic chromatic aberration at lens edges, surging during panic/glitch
-    float ca = (0.0007 + uFear * 0.0024 + uGlitch * 0.008) * (0.25 + rad2 * 2.2);
+    float ca = (0.00055 + uFear * 0.0026 + uGlitch * 0.0085) * (0.25 + rad2 * 2.2);
     vec2 caDir = centered * ca;
     vec3 col;
     col.r = texture2D(tDiffuse, clamp(uv + caDir, 0.002, 0.998)).r;
     col.g = texture2D(tDiffuse, uv).g;
     col.b = texture2D(tDiffuse, clamp(uv - caDir, 0.002, 0.998)).b;
 
-    // FidelityFX CAS local contrast sharpening (crisp Japanese kanji signs & matted plush fur!)
+    // FidelityFX CAS local contrast sharpening (razor-sharp kanji signs, ticket machine buttons & matted plush fur!)
     if (uUltra > 0.5) {
       vec3 nN = texture2D(tDiffuse, clamp(uv + vec2(0.0, px.y), 0.002, 0.998)).rgb;
       vec3 nS = texture2D(tDiffuse, clamp(uv - vec2(0.0, px.y), 0.002, 0.998)).rgb;
@@ -196,7 +197,7 @@ const COMPOSITE_FRAG = /* glsl */ `
       vec3 nW = texture2D(tDiffuse, clamp(uv - vec2(px.x, 0.0), 0.002, 0.998)).rgb;
       vec3 blur = (nN + nS + nE + nW) * 0.25;
       float contrast = length(col - blur);
-      float sharpAmt = clamp(0.28 - contrast * 0.2, 0.06, 0.28);
+      float sharpAmt = clamp(0.34 - contrast * 0.22, 0.08, 0.34);
       col = max(vec3(0.0), col + (col - blur) * sharpAmt);
     }
 
@@ -205,57 +206,60 @@ const COMPOSITE_FRAG = /* glsl */ `
     float ao = computeSSAO(uv, centerZ, px);
     col *= ao;
 
-    // Multi-pass silky HDR optical bloom + horizontal anamorphic glint
+    // Controlled tight HDR optical bloom (ZERO blinding whiteout glare!)
     vec3 bloom = texture2D(tBloom, uv).rgb;
-    col += bloom * (uUltra > 0.5 ? 0.62 : 0.36);
+    col += bloom * (uUltra > 0.5 ? 0.20 : 0.13);
     col += sampleAnamorphic(uv, px);
 
-    // Subtle eye adaptation in stealth
-    float isoBoost = 1.0 + uAutoIso * 0.24;
+    // Subtle dark-room eye adaptation when hiding or flashlight OFF
+    float isoBoost = 1.0 + uAutoIso * 0.22;
     col *= uExposure * isoBoost;
+
+    // Soft highlight knee before ACES so white signage stays crisp & readable
+    col = col / (1.0 + max(vec3(0.0), col - vec3(1.15)) * 0.32);
 
     // Cinematic ACES Filmic Tone Mapping
     col = acesFilm(col);
 
-    // Tokyo Underground Shinjuku Film Color Grade
+    // Tokyo 00:47 Midnight Underground Shinjuku Film Color Grade (deep slate shadows, natural cool-neutral highlights)
     float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
-    vec3 shadowTint = vec3(0.90, 0.97, 1.06);
-    vec3 hiTint = vec3(1.03, 1.01, 0.97);
-    col *= mix(shadowTint, hiTint, smoothstep(0.08, 0.78, luma));
+    vec3 shadowTint = vec3(0.84, 0.94, 1.05);
+    vec3 hiTint = vec3(1.01, 1.00, 0.97);
+    col *= mix(shadowTint, hiTint, smoothstep(0.06, 0.72, luma));
 
-    // Gentle S-curve contrast lift
-    col = mix(col, smoothstep(0.0, 1.0, col), 0.14);
+    // Filmic shadow contrast (deep blacks for authentic midnight horror dread!)
+    col = mix(col, smoothstep(0.0, 1.0, col), 0.18);
 
-    // Fear desaturation & crimson chase shift
-    float desat = uFear * 0.22 + uChase * 0.12;
+    // Fear desaturation & blood-crimson chase shift
+    float desat = uFear * 0.32 + uChase * 0.14;
     col = mix(col, vec3(luma), desat);
-    col = mix(col, col * vec3(1.18, 0.87, 0.87), uChase * 0.32);
+    col = mix(col, col * vec3(1.22, 0.84, 0.84), uChase * 0.36);
 
     // Cold breath condensation / moisture halo at screen edges when hiding/holding breath
     if (uBreathFog > 0.02) {
       float edgeMask = smoothstep(0.26, 0.80, length(centered * vec2(1.05, 1.28)));
       float breathWave = 0.6 + 0.4 * sin(uTime * 2.1 + uv.x * 5.0);
-      float fogAmt = edgeMask * uBreathFog * (0.28 + 0.14 * breathWave);
-      col = mix(col, vec3(0.56, 0.66, 0.72), clamp(fogAmt, 0.0, 0.36));
+      float fogAmt = edgeMask * uBreathFog * (0.30 + 0.14 * breathWave);
+      col = mix(col, vec3(0.52, 0.62, 0.68), clamp(fogAmt, 0.0, 0.38));
     }
 
-    // Impact / Photo Booth / Lightning flash
-    col += vec3(0.9, 0.95, 1.0) * uImpactFlash * 0.48;
+    // Impact / Photo Booth / Lightning flash (controlled, never blinding whiteout)
+    col += vec3(0.85, 0.92, 0.98) * uImpactFlash * 0.36;
 
-    // Physical lens vignette + heartbeat crimson rim
-    float vigBase = smoothstep(0.90, 0.26, length(centered * vec2(1.16, 1.02)));
-    float vigPower = mix(0.22, 0.68, clamp(uFear * 0.7 + uChase * 0.3 + uHeartbeat * 0.25, 0.0, 1.0));
+    // Atmospheric claustrophobic lens vignette + heartbeat crimson rim
+    float vigBase = smoothstep(0.88, 0.22, length(centered * vec2(1.14, 1.02)));
+    float vigPower = mix(0.32, 0.78, clamp(uFear * 0.72 + uChase * 0.3 + uHeartbeat * 0.25, 0.0, 1.0));
     col *= mix(1.0 - vigPower, 1.0, vigBase);
 
-    float redRim = (1.0 - vigBase) * (uFear * 0.22 + uHeartbeat * 0.28 + uChase * 0.22);
-    col += vec3(0.48, 0.03, 0.04) * redRim;
+    float redRim = (1.0 - vigBase) * (uFear * 0.26 + uHeartbeat * 0.32 + uChase * 0.26);
+    col += vec3(0.52, 0.025, 0.035) * redRim;
 
-    // Linear -> sRGB display encoding FIRST (prevents gamma from blowing up shadow noise!)
+    // Linear -> sRGB display encoding FIRST
     col = pow(clamp(col, 0.0, 1.0), vec3(1.0 / 2.2));
 
-    // Subtle organic sRGB-space 35mm film grain (clean & velvety even in deep blacks!)
+    // Organic sRGB-space 35mm midnight film grain
     float grainNoise = hash12(uv * uResolution + fract(uTime * 19.7) * 512.0) - 0.5;
-    float grainAmt = 0.022 + uAutoIso * 0.024 + uFear * 0.028 + uGlitch * 0.085;
+    float grainAmt = 0.026 + uAutoIso * 0.028 + uFear * 0.032 + uGlitch * 0.095;
     col = clamp(col + grainNoise * grainAmt, 0.0, 1.0);
 
     gl_FragColor = vec4(col, 1.0);
@@ -408,25 +412,25 @@ export class PostFX {
 
     // Pass A (Horizontal)
     this.blurMat.uniforms.tDiffuse.value = this.bloomExtractTarget.texture;
-    this.blurMat.uniforms.uDir.value.set(1.6 / bw, 0);
+    this.blurMat.uniforms.uDir.value.set(1.15 / bw, 0);
     renderer.setRenderTarget(this.bloomBlurH);
     renderer.render(this.quadScene, this.quadCamera);
 
     // Pass B (Vertical)
     this.blurMat.uniforms.tDiffuse.value = this.bloomBlurH.texture;
-    this.blurMat.uniforms.uDir.value.set(0, 1.6 / bh);
+    this.blurMat.uniforms.uDir.value.set(0, 1.15 / bh);
     renderer.setRenderTarget(this.bloomBlurV);
     renderer.render(this.quadScene, this.quadCamera);
 
     if (this.quality === 'ultra') {
-      // Wide halo second Gaussian iteration
+      // Controlled tight optical second Gaussian iteration
       this.blurMat.uniforms.tDiffuse.value = this.bloomBlurV.texture;
-      this.blurMat.uniforms.uDir.value.set(3.2 / bw, 0);
+      this.blurMat.uniforms.uDir.value.set(2.05 / bw, 0);
       renderer.setRenderTarget(this.bloomBlurH);
       renderer.render(this.quadScene, this.quadCamera);
 
       this.blurMat.uniforms.tDiffuse.value = this.bloomBlurH.texture;
-      this.blurMat.uniforms.uDir.value.set(0, 3.2 / bh);
+      this.blurMat.uniforms.uDir.value.set(0, 2.05 / bh);
       renderer.setRenderTarget(this.bloomBlurV);
       renderer.render(this.quadScene, this.quadCamera);
     }

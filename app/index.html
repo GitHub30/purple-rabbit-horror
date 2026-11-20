@@ -181,13 +181,17 @@
 
     <aside id="station-map-panel" class="station-map-panel" hidden aria-label="新宿駅 B1F 構内案内図">
       <div class="station-map-header">
-        <span>JR新宿駅 B1F 構内図</span>
-        <span class="station-map-key">[M] で閉じる</span>
+        <div class="station-map-title-group">
+          <span class="station-map-jr-badge">JR</span>
+          <span>新宿駅 B1F 構内案内図</span>
+        </div>
+        <button type="button" id="btn-map-close" class="station-map-close" aria-label="構内図を閉じる">× 閉じる</button>
       </div>
-      <canvas id="station-map-canvas" width="336" height="240"></canvas>
+      <canvas id="station-map-canvas" width="560" height="380"></canvas>
       <div class="station-map-legend">
-        <span><i class="leg-dot leg-term"></i>未チャージ</span>
+        <span><i class="leg-dot leg-term"></i>Suicaチャージ機</span>
         <span><i class="leg-dot leg-done"></i>完了</span>
+        <span><i class="leg-dot leg-hide"></i>潜伏(電話/ロッカー)</span>
         <span><i class="leg-dot leg-you"></i>現在地</span>
       </div>
     </aside>

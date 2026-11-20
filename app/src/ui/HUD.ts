@@ -1,4 +1,4 @@
-import { CELL, COLS, LoreNoteDef, ROWS, SHINJUKU_GRID } from '../station/shinjukuMap';
+import { CELL, COLS, HIDING_SPOTS, LoreNoteDef, ROWS, SHINJUKU_GRID } from '../station/shinjukuMap';
 import { TerminalInstance } from '../station/ShinjukuStation';
 
 export type ScreenName = 'LOADING' | 'TITLE' | 'PLAYING' | 'PAUSED' | 'NOTE' | 'JUMPSCARE' | 'GAMEOVER' | 'VICTORY';
@@ -90,6 +90,9 @@ export class HUD {
     document.getElementById('btn-gameover-title')?.addEventListener('click', cb.onReturnTitle);
     document.getElementById('btn-victory-retry')?.addEventListener('click', cb.onRestart);
     document.getElementById('btn-victory-title')?.addEventListener('click', cb.onReturnTitle);
+    document.getElementById('btn-map-close')?.addEventListener('click', () => {
+      if (this.mapOpen) this.toggleMap();
+    });
 
     this.muteBtn.addEventListener('click', () => {
       const m = cb.onToggleMute();
@@ -268,122 +271,190 @@ export class HUD {
     const ctx = this.mapCtx;
     const w = this.mapCanvas.width;
     const h = this.mapCanvas.height;
-    ctx.fillStyle = '#0c1116';
+    ctx.fillStyle = '#090e13';
     ctx.fillRect(0, 0, w, h);
 
-    const pad = 10;
-    const cw = (w - pad * 2) / COLS;
-    const ch = (h - pad * 2) / ROWS;
+    // Subtle architectural coordinate grid
+    ctx.strokeStyle = 'rgba(130, 170, 190, 0.06)';
+    ctx.lineWidth = 1;
+    for (let x = 20; x < w; x += 28) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (let y = 20; y < h; y += 28) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+
+    const padX = 16;
+    const padY = 18;
+    const cw = (w - padX * 2) / COLS;
+    const ch = (h - padY * 2) / ROWS;
 
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const cell = SHINJUKU_GRID[r][c];
-        if (cell === 1) continue;
+        if (cell === 1) {
+          // Highlight きっぷうりば (c=6..8, r=5) & みどりの窓口 (c=9..11, r=5) facility bays
+          if (r === 5 && c >= 6 && c <= 8) {
+            ctx.fillStyle = '#1b3830';
+            ctx.fillRect(padX + c * cw, padY + r * ch, cw - 0.5, ch - 0.5);
+          } else if (r === 5 && c >= 9 && c <= 11) {
+            ctx.fillStyle = '#155432';
+            ctx.fillRect(padX + c * cw, padY + r * ch, cw - 0.5, ch - 0.5);
+          }
+          continue;
+        }
         const isEastExit = c >= 19 && r >= 1 && r <= 3;
         const isFreePassage = r >= 1 && r <= 4 && c <= 18;
         const isPaidConcourse = c >= 3 && c <= 17 && r >= 6 && r <= 12;
 
         if (isEastExit) {
-          ctx.fillStyle = exitReady ? '#227a48' : '#4a1c22';
+          ctx.fillStyle = exitReady ? '#1f7c46' : '#541c24';
         } else if (cell === 2) {
-          // J・ADビジョン Light-Box Digital Signage Column
-          ctx.fillStyle = '#6c4ab8';
-        } else if (cell === 3) {
-          // みどりの窓口 Ticket Office
-          ctx.fillStyle = '#1b5a34';
+          ctx.fillStyle = '#5e42a4';
         } else if (cell === 4) {
-          // Platform 7-16 Staircase Bay
-          ctx.fillStyle = '#18241e';
+          ctx.fillStyle = '#15221d';
         } else if (isFreePassage) {
-          // 東西自由通路 (blue-tinted free passage matching JR East diagram)
-          ctx.fillStyle = '#25394a';
+          ctx.fillStyle = '#213647';
         } else if (isPaidConcourse) {
-          // 改札内コンコース・中央通路 (green-tinted paid zone matching JR East diagram)
-          ctx.fillStyle = '#1e3028';
+          ctx.fillStyle = '#1b2d25';
         } else {
-          ctx.fillStyle = '#222b34';
+          ctx.fillStyle = '#1e2730';
         }
-        ctx.fillRect(pad + c * cw, pad + r * ch, cw - 0.5, ch - 0.5);
+        ctx.fillRect(padX + c * cw, padY + r * ch, cw - 0.6, ch - 0.6);
       }
     }
 
     // Highlight 『新宿ウォール456』 along North wall of 東西自由通路 (c=5..16, r=1)
-    ctx.fillStyle = '#2ee0f8';
-    ctx.fillRect(pad + 5 * cw, pad + 1 * ch - 2.5, 11.4 * cw, 3);
+    ctx.fillStyle = '#38d4f0';
+    ctx.fillRect(padX + 5 * cw, padY + 1 * ch - 3.5, 11.4 * cw, 4);
 
-    // Color-coded platform stair badges (15・16, 13・14, 11・12, 9・10, 7・8番線)
-    const platBadges: Array<[number, string, string]> = [
-      [4, '15·16', '#7ac142'],
-      [7, '13·14', '#e8be00'],
-      [10, '11·12', '#f15a22'],
-      [13, '9·10', '#2888d8'],
-      [16, '7·8', '#f15a22'],
+    // Subtle yellow tactile main line along 東西自由通路 & 中央通路
+    ctx.strokeStyle = 'rgba(224, 186, 46, 0.36)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padX + 1.5 * cw, padY + 2.65 * ch);
+    ctx.lineTo(padX + 18.5 * cw, padY + 2.65 * ch);
+    ctx.moveTo(padX + 1.5 * cw, padY + 11.7 * ch);
+    ctx.lineTo(padX + 19.5 * cw, padY + 11.7 * ch);
+    ctx.stroke();
+
+    // Color-coded platform stair bays (15・16, 13・14, 11・12, 9・10, 7・8番線)
+    const platBadges: Array<[number, string, string, string]> = [
+      [4, '15·16', '山手/総武', '#7ac142'],
+      [7, '13·14', '総武/山手', '#e8be00'],
+      [10, '11·12', '中央快速', '#f15a22'],
+      [13, '9·10', '中央特急', '#2888d8'],
+      [16, '7·8', '中央快速', '#f15a22'],
     ];
     ctx.textAlign = 'center';
-    for (const [col, label, color] of platBadges) {
-      const bx = pad + (col + 0.5) * cw;
+    for (const [col, label, lineSub, color] of platBadges) {
+      const bx = padX + (col + 0.5) * cw;
       ctx.fillStyle = color;
-      ctx.fillRect(pad + col * cw, pad + 7 * ch, cw - 0.5, 3);
-      ctx.fillRect(pad + col * cw, pad + 9 * ch, cw - 0.5, 3);
+      ctx.fillRect(padX + col * cw, padY + 7 * ch, cw - 0.6, 3.5);
+      ctx.fillRect(padX + col * cw, padY + 9.85 * ch, cw - 0.6, 3.5);
       ctx.fillStyle = '#f2f6f4';
-      ctx.font = 'bold 7.5px monospace';
-      ctx.fillText(label, bx, pad + 8.65 * ch);
+      ctx.font = 'bold 10.5px monospace';
+      ctx.fillText(label, bx, padY + 8.4 * ch);
+      ctx.fillStyle = '#9db4aa';
+      ctx.font = '600 8px sans-serif';
+      ctx.fillText(lineSub, bx, padY + 9.2 * ch);
     }
 
     // Authentic Shinjuku B1F Zone & Gate Labels
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#8ceeff';
-    ctx.font = 'bold 8px sans-serif';
-    ctx.fillText('新宿ウォール456', pad + 10.7 * cw, pad + 0.8 * ch);
+    ctx.fillStyle = '#7ce4fa';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText('━━ 新宿ウォール456 (45.6m LED) ━━', padX + 10.7 * cw, padY + 0.72 * ch);
 
-    ctx.fillStyle = '#e4eef6';
-    ctx.font = 'bold 8.5px sans-serif';
-    ctx.fillText('←西口   東西自由通路   アルプス広場→', pad + 10.5 * cw, pad + 2.6 * ch);
+    ctx.fillStyle = '#e6f0f8';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('← 西口地下広場      東西自由通路 (J・ADビジョン柱列)      アルプス広場 →', padX + 10.2 * cw, padY + 2.52 * ch);
 
-    ctx.fillStyle = exitReady ? '#74ffb0' : '#ff8a8a';
-    ctx.font = 'bold 8px sans-serif';
-    ctx.fillText('東口出口', pad + 19.5 * cw, pad + 2.4 * ch);
+    ctx.fillStyle = exitReady ? '#68f4a6' : '#ff8c92';
+    ctx.font = 'bold 10.5px sans-serif';
+    ctx.fillText('東口出口', padX + 19.6 * cw, padY + 2.15 * ch);
+    ctx.font = '600 8.5px sans-serif';
+    ctx.fillText(exitReady ? '解錠OK' : '歌舞伎町', padX + 19.6 * cw, padY + 2.85 * ch);
 
-    ctx.fillStyle = '#92f4b8';
-    ctx.font = 'bold 8px sans-serif';
-    ctx.fillText('西改札', pad + 4.5 * cw, pad + 5.7 * ch);
-    ctx.fillText('みどりの窓口', pad + 10.5 * cw, pad + 5.7 * ch);
-    ctx.fillText('東改札', pad + 16.5 * cw, pad + 5.7 * ch);
+    ctx.fillStyle = '#8ef4b8';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText('西改札', padX + 4.5 * cw, padY + 5.65 * ch);
+    ctx.fillStyle = '#a4e8d0';
+    ctx.font = '600 9.5px sans-serif';
+    ctx.fillText('きっぷ', padX + 7.5 * cw, padY + 5.65 * ch);
+    ctx.fillStyle = '#90f8be';
+    ctx.font = 'bold 10.5px sans-serif';
+    ctx.fillText('みどりの窓口', padX + 10.5 * cw, padY + 5.65 * ch);
+    ctx.fillStyle = '#8ef4b8';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText('東改札', padX + 16.5 * cw, padY + 5.65 * ch);
 
     ctx.fillStyle = '#c8d6dc';
-    ctx.font = 'bold 8.5px sans-serif';
-    ctx.fillText('←中央西改札(小田急・京王)   中央通路   中央東改札→', pad + 10.5 * cw, pad + 12.1 * ch);
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText('← 中央西改札 (小田急・京王のりかえ)       中央通路       中央東改札 (ルミネ) →', padX + 10.5 * cw, padY + 12.1 * ch);
 
-    // 5 Suica Charge Terminals
+    // Compass badge top-right
+    ctx.fillStyle = 'rgba(18, 28, 36, 0.9)';
+    ctx.fillRect(w - 42, 8, 30, 24);
+    ctx.strokeStyle = 'rgba(128, 195, 66, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(w - 42, 8, 30, 24);
+    ctx.fillStyle = '#80c342';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('N↑', w - 27, 24);
+
+    // Hiding spots (Phone Booths & Suica Lockers)
+    for (const hSpot of HIDING_SPOTS) {
+      const hx = padX + (hSpot.x / CELL) * cw;
+      const hy = padY + (hSpot.z / CELL) * ch;
+      ctx.fillStyle = hSpot.kind === 'phonebooth' ? '#36c274' : '#429874';
+      ctx.fillRect(hx - 3.2, hy - 3.2, 6.4, 6.4);
+      ctx.strokeStyle = '#091015';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(hx - 3.2, hy - 3.2, 6.4, 6.4);
+    }
+
+    // 5 Suica Charge Terminals (きっぷ・チャージ)
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.006);
     for (const t of terminals) {
-      const mx = pad + (t.def.x / CELL) * cw;
-      const my = pad + (t.def.z / CELL) * ch;
+      const mx = padX + (t.def.x / CELL) * cw;
+      const my = padY + (t.def.z / CELL) * ch;
+      if (!t.charged) {
+        ctx.strokeStyle = `rgba(74, 224, 214, ${0.35 + pulse * 0.45})`;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(mx, my, 7.5 + pulse * 2.8, 0, Math.PI * 2);
+        ctx.stroke();
+      }
       ctx.fillStyle = t.charged ? '#38d884' : '#4ae0d6';
       ctx.beginPath();
-      ctx.arc(mx, my, 4.2, 0, Math.PI * 2);
+      ctx.arc(mx, my, 5.2, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#091015';
-      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = '#070d12';
+      ctx.lineWidth = 1.6;
       ctx.stroke();
     }
 
     // Player marker + heading cone
-    const ux = pad + (px / CELL) * cw;
-    const uy = pad + (pz / CELL) * ch;
+    const ux = padX + (px / CELL) * cw;
+    const uy = padY + (pz / CELL) * ch;
     ctx.save();
     ctx.translate(ux, uy);
     ctx.rotate(-yaw);
-    ctx.fillStyle = 'rgba(218, 174, 48, 0.30)';
+    ctx.fillStyle = 'rgba(240, 192, 56, 0.34)';
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(-9, -18);
-    ctx.lineTo(9, -18);
+    ctx.lineTo(-13, -26);
+    ctx.lineTo(13, -26);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#f0c038';
+    ctx.fillStyle = '#f2c43a';
     ctx.beginPath();
-    ctx.arc(0, 0, 3.8, 0, Math.PI * 2);
+    ctx.arc(0, 0, 5.2, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = '#090d11';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
     ctx.restore();
   }
 

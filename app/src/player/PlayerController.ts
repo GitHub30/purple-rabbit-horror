@@ -72,30 +72,30 @@ export class PlayerController {
     private cb: PlayerCallbacks,
     flashlightCookie: THREE.CanvasTexture
   ) {
-    // Dynamic Shadow-Casting Tactical Flashlight!
-    this.flashlight = new THREE.SpotLight(0xfff4e6, 26, 30, Math.PI * 0.25, 0.62, 1.35);
+    // Dynamic Shadow-Casting Tactical Flashlight (crisp narrow horror beam without washing out signs!)
+    this.flashlight = new THREE.SpotLight(0xfff1de, 19, 28, Math.PI * 0.23, 0.64, 1.48);
     this.flashlight.map = flashlightCookie;
     this.flashlight.castShadow = true;
     const sm = window.innerWidth <= 900 ? 512 : 1024;
     this.flashlight.shadow.mapSize.set(sm, sm);
     this.flashlight.shadow.camera.near = 0.2;
-    this.flashlight.shadow.camera.far = 28;
+    this.flashlight.shadow.camera.far = 26;
     this.flashlight.shadow.bias = -0.0009;
 
     this.flashlightTarget = new THREE.Object3D();
     this.flashlight.target = this.flashlightTarget;
 
-    // Soft close bounce fill around player
-    this.fillLight = new THREE.PointLight(0xa6c4d4, 1.35, 6.2, 2.0);
+    // Subtle close bounce fill around player
+    this.fillLight = new THREE.PointLight(0x88a8bc, 0.62, 5.4, 2.0);
 
     // Subtle volumetric handheld flashlight dust beam
-    const coneGeo = new THREE.ConeGeometry(1.5, 6.8, 18, 1, true);
-    coneGeo.translate(0, -3.4, 0);
+    const coneGeo = new THREE.ConeGeometry(1.4, 6.4, 18, 1, true);
+    coneGeo.translate(0, -3.2, 0);
     coneGeo.rotateX(Math.PI / 2);
     this.flashlightBeamMat = new THREE.ShaderMaterial({
       uniforms: {
-        uOpacity: { value: 0.032 },
-        uColor: { value: new THREE.Color(0xcce2ec) },
+        uOpacity: { value: 0.02 },
+        uColor: { value: new THREE.Color(0xc2d8e2) },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -506,17 +506,17 @@ export class PlayerController {
     this.flashlightTarget.updateMatrixWorld();
 
     const emFlicker =
-      fear > 0.52 && Math.sin(elapsed * 47) * Math.sin(elapsed * 29) > 0.62 ? 0.18 : 1.0;
+      fear > 0.45 && Math.sin(elapsed * 47) * Math.sin(elapsed * 29) > 0.56 ? 0.14 : 1.0;
     const on = this.flashlightOn && !this.hiddenCloset;
-    this.flashlight.intensity = on ? 26 * brightnessMult * emFlicker : 0;
+    this.flashlight.intensity = on ? 19 * brightnessMult * emFlicker : 0;
     this.fillLight.position.copy(camera.position);
-    this.fillLight.intensity = (on ? 1.5 : 0.72) * brightnessMult;
+    this.fillLight.intensity = (on ? 0.62 : 0.34) * brightnessMult;
 
     this.flashlightBeam.visible = on;
     if (on) {
       this.flashlightBeam.position.copy(this.flashlight.position);
       this.flashlightBeam.lookAt(this.flashlightTarget.position);
-      this.flashlightBeamMat.uniforms.uOpacity.value = 0.032 * emFlicker;
+      this.flashlightBeamMat.uniforms.uOpacity.value = 0.02 * emFlicker;
     }
 
     // Update thrown distraction coins
